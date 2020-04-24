@@ -18,7 +18,7 @@ int main ()
 		printf ("Error while server socket creation"); 
 		exit (0); 
 	}
-	printf ("Server Socket Created\n");
+	printf ("Server Socket Created with %d\n", serverSocket);
 
 	/*CONSTRUCT LOCAL ADDRESS STRUCTURE*/
 	struct sockaddr_in serverAddress, clientAddress;
@@ -37,7 +37,7 @@ int main ()
 		printf ("Error while binding\n");
 		exit (0);
 	}
-	printf ("Binding successful\n");
+	printf ("Binding successful with %d\n", temp);
 
 	int temp1 = listen(serverSocket, MAXPENDING);
 	if (temp1 < 0)
@@ -46,7 +46,7 @@ int main ()
 		exit (0);
 	}
 
-	printf ("Now Listening\n");
+	printf ("Now Listening with %d\n", temp1);
 	char msg[BUFFERSIZE];
 	int clientLength = sizeof(clientAddress);
 	int clientSocket = accept (serverSocket, (struct sockaddr*) &clientAddress, &clientLength);
@@ -56,7 +56,7 @@ int main ()
 		printf ("Error in client socket"); 
 		exit(0);
 	}
-	printf ("Handling Client %s\n", inet_ntoa(clientAddress.sin_addr));
+	printf ("Handling Client %s and clientSocket %d\n", inet_ntoa(clientAddress.sin_addr), clientSocket);
 
 	int temp2 = recv(clientSocket, msg, BUFFERSIZE, 0);
 	if (temp2 < 0)
@@ -65,7 +65,7 @@ int main ()
 		exit (0);
 	}
 
-	printf ("%s\n", msg);
+	printf ("%s and temp2 %d\n", msg, temp2);
 	printf ("ENTER MESSAGE FOR CLIENT\n");
 	gets (msg);
 

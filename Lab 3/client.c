@@ -17,7 +17,7 @@ int main()
 		exit (0);
 	}
 
-	printf ("Client Socket Created\n");
+	printf ("Client Socket Created with %d\n", sock);
 
 	/*CONSTRUCT SERVER ADDRESS STRUCTURE*/
 	struct sockaddr_in serverAddr;
@@ -26,8 +26,10 @@ int main()
 	memset (&serverAddr,0,sizeof(serverAddr));
 	
 	serverAddr.sin_family = AF_INET;
-	serverAddr.sin_port = htons(12345); //You can change port number here
-	serverAddr.sin_addr.s_addr = inet_addr("127.127.0.1"); //Specify server's
+	serverAddr.sin_port = htons(12345); 	// This is the port number that the client connects to
+	serverAddr.sin_addr.s_addr = inet_addr("192.168.1.106"); //Specify server's
+
+	// 192.168.1.106
 
 	printf ("Address assigned\n");
 
