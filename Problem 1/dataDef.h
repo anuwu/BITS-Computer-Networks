@@ -1,5 +1,6 @@
 #define PACKET_SIZE 4
-#define DROP 0.90
+#define DROP 0.75
+#define TIMEOUT 2
 
 typedef struct _dat data ;
 

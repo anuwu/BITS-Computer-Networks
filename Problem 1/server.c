@@ -149,17 +149,19 @@ int main(int argc , char *argv[])
 					} 	
 					else
 					{ 
+						datBuf->offset/4 % 2 ? printf("\t") : 0 ;
 						if (getRand () > DROP)
 						{
 							ackPkt->pktType = ACK ;
-							printf ("%s : (%s, %s) , (%d, %d) --> %s \n", channelIDToString (datBuf->channel), packetTypeToString (datBuf->pktType), isLastToString (datBuf->last), datBuf->payload, datBuf->offset, datBuf->stuff);
+							//printf ("%s : (%s, %s) , (%d, %d) --> %s \n", channelIDToString (datBuf->channel), packetTypeToString (datBuf->pktType), isLastToString (datBuf->last), datBuf->payload, datBuf->offset, datBuf->stuff);
+							printf ("%d : RECV\n", datBuf->offset/4) ;
 							send(sd , ackPkt , sizeof(data) , 0); 
 						}
 						else
 						{
 							printf ("%d : DROP\n", datBuf->offset/4) ;
 							ackPkt->pktType = DATA ;
-							send (sd, ackPkt, sizeof(data), 0) ;
+							//send (sd, ackPkt, sizeof(data), 0) ;
 						}
 					} 
 				} 

@@ -15,19 +15,24 @@ void die(char *s)
     exit(1);
 }
 
+int setServer (struct sockaddr_in server_addr, fd_set* readfds)
+{
+	int sockfd ;
+	return sockfd ;
+}
+
 int main(void)
 {
 	data *datCache [10] ;
+	data *ackPkt = (data *) malloc (sizeof(data)) ;
+	ackPkt->pktType = DATA ;
 
 	if (!fork())
 	{
 	    struct sockaddr_in server_addr;
-	    int sockfd, i, slen=sizeof(server_addr), activity ;
-	    struct timeval timeout = {2,0} ;
-
+	    int sockfd, i, slen = sizeof(server_addr), sndCount ;
+	    struct timeval timeout = {TIMEOUT,0} ;
 	    data *datBuf ;
-	    data *ackPkt = (data *) malloc (sizeof(data)) ;
-		ackPkt->pktType = DATA ;
 	 
 	    if ((sockfd=socket(AF_INET, SOCK_STREAM, 0)) == -1)
 	        die("socket\n");
@@ -39,7 +44,7 @@ int main(void)
 	    memset((char *) &server_addr, 0, sizeof(server_addr));
 	    server_addr.sin_family = AF_INET;
 	    server_addr.sin_port = htons(SERVER_PORT);
-	    server_addr.sin_addr.s_addr = inet_addr("192.168.1.106");
+	    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 	     
 	    if (connect (sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
 	    	die ("Connection even failed!\n") ;
@@ -55,28 +60,37 @@ int main(void)
 	    	strcpy (datBuf->stuff , "abcd") ;
 	    	datCache[i] = datBuf ;
 
-	    	printf ("%d : SENDING\n", i) ;
+	    	sndCount = 1 ;
 	    	ackPkt->pktType = DATA ;
 	        while (1)
 	        {
+	        	printf ("%d : SENDING %d\n", i, sndCount) ;
 	        	send (sockfd, (char *)datBuf, sizeof(data), 0) ;
-	        	activity = select (sockfd + 1, &readfds, NULL, NULL, &timeout) ;
+	        	select (sockfd + 1, &readfds, NULL, NULL, &timeout) ;
 
 	        	if (FD_ISSET (sockfd, &readfds))
 	        	{
 	        		read (sockfd, (char *)ackPkt, sizeof(data)) ;	        		
 
 	        		if (ackPkt->pktType != ACK)
-	        			printf ("%d : TIMEOUT %d\n", i, timeout.tv_sec) ;
+	        			printf ("%d : TIMEOUT\n", i) ;
 	        		else
 	        		{
-	        			printf ("%d : ACK\n", i, timeout.tv_sec) ;
+	        			printf ("%d : ACK\n", i) ;
 	        			ackPkt->pktType = DATA ;
 	        			break ;
 	        		}		
 	        	}
+	        	else
+	        	{
+	        		printf ("%d : REAL_TIMEOUT\n", i) ;
+	        		//break ;
+	        	}
 
-	        	timeout.tv_sec = 2 ;
+	        	sndCount++ ;
+	        	FD_ZERO(&readfds); 
+	   			FD_SET (sockfd, &readfds) ;
+	        	timeout.tv_sec = TIMEOUT ;
 	        	timeout.tv_usec = 0 ;
 	        }
 	        ackPkt->pktType = DATA ;
@@ -87,12 +101,10 @@ int main(void)
 	else
 	{
 		struct sockaddr_in server_addr;
-	    int sockfd, i, slen=sizeof(server_addr), activity;
-	    struct timeval timeout = {2,0} ;
-
+	    int sockfd, i, slen=sizeof(server_addr), activity, sndCount ;
+	    struct timeval timeout = {TIMEOUT,0} ;
 	    data *datBuf ;
-	   	data *ackPkt = (data *) malloc (sizeof(data)) ;
-		ackPkt->pktType = DATA ;
+
 	 
 	    if ((sockfd=socket(AF_INET, SOCK_STREAM, 0)) == -1)
 	        die("socket\n");
@@ -104,7 +116,7 @@ int main(void)
 	    memset((char *) &server_addr, 0, sizeof(server_addr));
 	    server_addr.sin_family = AF_INET;
 	    server_addr.sin_port = htons(SERVER_PORT);
-	    server_addr.sin_addr.s_addr = inet_addr("192.168.1.106");
+	    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 	     
 	    if (connect (sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
 	    	die ("Connection odd failed!\n") ;
@@ -120,12 +132,13 @@ int main(void)
 	    	datCache[i] = datBuf ;
 	    	strcpy (datBuf->stuff , "efgh") ;
 
-	    	printf ("\t%d : SENDING\n", i) ;
+	    	sndCount = 1 ;
 	    	ackPkt->pktType = DATA ;
 	        while (1)
 	        {
+	        	printf ("\t%d : SENDING %d\n", i, sndCount) ;
 	        	send (sockfd, (char *)datBuf, sizeof(data), 0) ;
-	        	activity = select (sockfd + 1 , &readfds, NULL, NULL, &timeout) ;
+	        	select (sockfd + 1 , &readfds, NULL, NULL, &timeout) ;
 
 	        	if (FD_ISSET (sockfd, &readfds))
 	        	{
@@ -140,15 +153,21 @@ int main(void)
 	        			break ;
 	        		}		
 	        	}
+	        	else
+	        	{
+	        		printf ("\t%d : REAL_TIMEOUT\n", i) ;
+	        		//break ;
+	        	}
 
-				timeout.tv_sec = 2 ;
+	        	sndCount++ ;
+	        	FD_ZERO(&readfds); 
+	   			FD_SET (sockfd, &readfds) ;
+				timeout.tv_sec = TIMEOUT ;
 	        	timeout.tv_usec = 0 ;
 	        }
 	        ackPkt->pktType = DATA ;
 	    }
-
 	    close(sockfd);
-
 	}
     return 0;
 }
