@@ -24,32 +24,30 @@ int main(int argc , char *argv[])
 	struct sockaddr_in address; 
 		
 	char buffer[1025]; //data buffer of 1K 
+	char sendAck[4] = "ACK" ;
 		
 	//set of socket descriptors 
 	fd_set readfds; 
 		
 	//a message 
-	char message[100] = "ECHO Daemon v1.0\r\n\0"; 
+	char message[100] = "ECHO Daemon v1.0\r\n"; 
 	
 	//initialise all client_socket[] to 0 so not checked 
 	for (i = 0; i < max_clients; i++) 
-	{ 
 		client_socket[i] = 0; 
-	} 
 		
 	//create a master socket 
 	if( (master_socket = socket(AF_INET , SOCK_STREAM , 0)) == 0) 
 	{ 
-		perror("socket failed"); 
+		perror("Server socket creation failed"); 
 		exit(EXIT_FAILURE); 
 	} 
 	
 	//set master socket to allow multiple connections , 
 	//this is just a good habit, it will work without this 
-	if( setsockopt(master_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, 
-		sizeof(opt)) < 0 ) 
+	if(setsockopt(master_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0 ) 
 	{ 
-		perror("setsockopt"); 
+		perror("setsockopt failed"); 
 		exit(EXIT_FAILURE); 
 	} 
 	
@@ -67,15 +65,15 @@ int main(int argc , char *argv[])
 	printf("Listener on port %d \n", PORT); 
 		
 	//try to specify maximum of 3 pending connections for the master socket 
-	if (listen(master_socket, 3) < 0) 
+	if (listen(master_socket, 2) < 0) 
 	{ 
-		perror("listen"); 
+		perror("listen failed"); 
 		exit(EXIT_FAILURE); 
 	} 
 		
 	//accept the incoming connection 
 	addrlen = sizeof(address); 
-	puts("Waiting for connections ..."); 
+	int disconnect = 0 ;
 		
 	while(TRUE) 
 	{ 
@@ -106,31 +104,20 @@ int main(int argc , char *argv[])
 		activity = select( max_sd + 1 , &readfds , NULL , NULL , NULL); 
 	
 		if ((activity < 0) && (errno!=EINTR)) 
-		{ 
-			printf("select error"); 
-		} 
-			
+			perror("select error"); 
+
 		//If something happened on the master socket , 
 		//then its an incoming connection 
 		if (FD_ISSET(master_socket, &readfds)) 
 		{ 
-			if ((new_socket = accept(master_socket, 
-					(struct sockaddr *)&address, (socklen_t*)&addrlen))<0) 
+			if ((new_socket = accept(master_socket, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0) 
 			{ 
-				perror("accept"); 
+				perror("accept error"); 
 				exit(EXIT_FAILURE); 
 			} 
 			
 			//inform user of socket number - used in send and receive commands 
 			printf("New connection , socket fd is %d , ip is : %s , port : %d\n" , new_socket , inet_ntoa(address.sin_addr) , ntohs (address.sin_port)) ; 
-		
-			//send new connection greeting message 
-			if(write(new_socket, message, strlen(message)) != strlen(message) ) 
-			{ 
-				perror("send"); 
-			} 
-				
-			printf("Welcome message sent successfully %d\n", strlen(message)); 
 				
 			//add new socket to array of sockets 
 			for (i = 0; i < max_clients; i++) 
@@ -139,7 +126,6 @@ int main(int argc , char *argv[])
 				if( client_socket[i] == 0 ) 
 				{ 
 					client_socket[i] = new_socket; 
-					printf("Adding to list of sockets as %d\n" , i); 
 					break; 
 				} 
 			} 
@@ -155,26 +141,22 @@ int main(int argc , char *argv[])
 				//Check if it was for closing , and also read the 
 				//incoming message 
 				if ((valread = read( sd , buffer, 1024)) == 0) 
-				{ 
-					//Somebody disconnected , get his details and print 
-					getpeername(sd , (struct sockaddr*)&address , (socklen_t*)&addrlen); 
-					printf("Host disconnected , ip %s , port %d \n" , 
-						inet_ntoa(address.sin_addr) , ntohs(address.sin_port)); 
-						
-					//Close the socket and mark as 0 in list for reuse 
-					close( sd ); 
+				{ 						
+					close (sd); 
 					client_socket[i] = 0; 
+					disconnect++ ;
 				} 	
-				//Echo back the message that came in 
 				else
 				{ 
-					//set the string terminating NULL byte on the end 
-					//of the data read 
 					buffer[valread] = '\0'; 
-					send(sd , buffer , strlen(buffer) , 0 ); 
+					printf ("%d : %s\n", i, buffer) ;
+					send(sd , sendAck , 4 , 0); 
 				} 
 			} 
 		} 
+
+		if (disconnect == 1)
+			break ;
 	} 
 		
 	return 0; 

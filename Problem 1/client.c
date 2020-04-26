@@ -4,7 +4,7 @@
 #include<stdlib.h> //exit(0);
 #include<arpa/inet.h>
 #include<sys/socket.h>
-#define BUFLEN 512  //Max length of buffer
+#define BUFLEN 2  //Max length of buffer
 
 #define PORT 8888  // The port on which to send data
 
@@ -18,8 +18,8 @@ int main(void)
 {
     struct sockaddr_in server_addr;
     int sockfd, i, slen=sizeof(server_addr);
-    char buf[BUFLEN];
-    char message[BUFLEN];
+    char numDat[BUFLEN] ;
+    char ackBuf [4] ;
     char closeChar ;
  
     if ((sockfd=socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -34,21 +34,15 @@ int main(void)
     if (connect (sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
     	die ("connection failed!\n") ;
 
-    buf[read (sockfd, buf, BUFLEN)] = '\0' ;
-    printf ("%d : %s", strlen(buf), buf) ;
+    for (int i = 0 ; i < 10 ; i++)
+    {
+        sprintf (numDat, "%d", i) ;
+        write (sockfd, buf, BUFLEN) ;
 
-    printf ("Write your message : ") ;
-    scanf ("%s", message) ;
-    write (sockfd, message, BUFLEN) ;
-
-    buf[read (sockfd, buf, BUFLEN)] = '\0' ;
-    printf ("Echoed message : %s\n", buf) ;
-
-    scanf ("%c", &closeChar) ;
-    printf ("Do you want to close? Press any key : ") ;
-    scanf ("%c", &closeChar) ;
+        buf[read (sockfd, ackBuf, 4)] = '\0' ;
+        printf ("%d : %s", i, ackBuf) ;
+    }
 
     close(sockfd);
     return 0;
 }
-
