@@ -4,10 +4,10 @@
 #include<unistd.h>
 #include<arpa/inet.h>
 #include<sys/socket.h>
+#include "dataDef.h"
 
 #define BUFLEN 2  //Max length of buffer
 #define SERVER_PORT 8888  // The port on which to send data
-
 
 void die(char *s)
 {
@@ -21,9 +21,10 @@ int main(void)
 	{
 	    struct sockaddr_in server_addr;
 	    int sockfd, i, slen=sizeof(server_addr);
-	    char numDat[BUFLEN] ;
+	    //char *serialDat ;
 	    char ackBuf [4] ;
 	    char closeChar ;
+	    data *datBuf ;
 	 
 	    if ((sockfd=socket(AF_INET, SOCK_STREAM, 0)) == -1)
 	        die("socket\n");
@@ -35,13 +36,14 @@ int main(void)
 	     
 	    if (connect (sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
 	    	die ("Connection even failed!\n") ;
-	    else
-	    	printf ("Connection even success\n") ;
 
 	    for (int i = 0 ; i < 10 ; i += 2)
 	    {
-	        sprintf (numDat, "%d", i) ;
-	        write (sockfd, numDat, BUFLEN) ;
+	    	datBuf = (data *) malloc (sizeof(data)) ;
+	    	datBuf->num = i ;
+	    	datBuf->alph = 'a' + i ;
+
+	        send (sockfd, (char *)datBuf, sizeof(data), 0) ;
 
 	        ackBuf[read (sockfd, ackBuf, 4)] = '\0' ;
 	        printf ("%d : %s\n", i, ackBuf) ;
@@ -56,6 +58,7 @@ int main(void)
 	    char numDat[BUFLEN] ;
 	    char ackBuf [4] ;
 	    char closeChar ;
+	    data *datBuf ;
 	 
 	    if ((sockfd=socket(AF_INET, SOCK_STREAM, 0)) == -1)
 	        die("socket\n");
@@ -67,16 +70,17 @@ int main(void)
 	     
 	    if (connect (sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
 	    	die ("Connection odd failed!\n") ;
-	    else
-	    	printf ("Connection odd success\n") ;
 
 	    for (int i = 1 ; i < 10 ; i += 2)
 	    {
-	        sprintf (numDat, "%d", i) ;
-	        write (sockfd, numDat, BUFLEN) ;
+	    	data *datBuf = (data *) malloc (sizeof(data)) ;
+	    	datBuf->num = i ;
+	    	datBuf->alph = 'a' + i ;
+
+	        send (sockfd, (char *)datBuf, sizeof(data), 0) ;
 
 	        ackBuf[read (sockfd, ackBuf, 4)] = '\0' ;
-	        printf ("\t%d : %s\n", i, ackBuf) ;
+	        printf ("%d : %s\n", i, ackBuf) ;
 	    }
 
 	    close(sockfd);

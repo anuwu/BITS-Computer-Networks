@@ -10,6 +10,7 @@
 #include <sys/socket.h> 
 #include <netinet/in.h> 
 #include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros 
+#include "dataDef.h"
 	
 #define TRUE 1 
 #define FALSE 0 
@@ -22,8 +23,9 @@ int main(int argc , char *argv[])
 		max_clients = 30 , activity, i , valread , sd; 
 	int max_sd; 
 	struct sockaddr_in address; 
+	data *datBuf = (data *) malloc (sizeof(data));
 		
-	char buffer[1025]; //data buffer of 1K 
+	//char buffer[1025]; //data buffer of 1K 
 	char sendAck[4] = "ACK" ;
 		
 	//set of socket descriptors 
@@ -140,7 +142,7 @@ int main(int argc , char *argv[])
 			{ 
 				//Check if it was for closing , and also read the 
 				//incoming message 
-				if ((valread = read( sd , buffer, 1024)) == 0) 
+				if ((valread = read(sd , datBuf, sizeof(datBuf))) == 0) 
 				{ 						
 					close (sd); 
 					client_socket[i] = 0; 
@@ -148,8 +150,8 @@ int main(int argc , char *argv[])
 				} 	
 				else
 				{ 
-					buffer[valread] = '\0'; 
-					printf ("%d : %s\n", i, buffer) ;
+					//buffer[valread] = '\0'; 
+					printf ("%d : %d %c\n", i, datBuf->num, datBuf->alph) ;
 					send(sd , sendAck , 4 , 0); 
 				} 
 			} 
