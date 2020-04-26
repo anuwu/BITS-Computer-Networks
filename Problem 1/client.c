@@ -22,17 +22,19 @@ int main(void)
 	if (!fork())
 	{
 	    struct sockaddr_in server_addr;
-	    int sockfd, i, slen=sizeof(server_addr);
-	    //char *serialDat ;
-	    char ackBuf [4] ;
-	    char closeChar ;
+	    int sockfd, i, slen=sizeof(server_addr), activity ;
+	    struct timeval timeout = {2,0} ;
+
 	    data *datBuf ;
 	    data *ackPkt = (data *) malloc (sizeof(data)) ;
 		ackPkt->pktType = DATA ;
-	    
 	 
 	    if ((sockfd=socket(AF_INET, SOCK_STREAM, 0)) == -1)
 	        die("socket\n");
+
+	    fd_set readfds; 
+	    FD_ZERO(&readfds); 
+	    FD_SET (sockfd, &readfds) ;
 	 
 	    memset((char *) &server_addr, 0, sizeof(server_addr));
 	    server_addr.sin_family = AF_INET;
@@ -55,16 +57,28 @@ int main(void)
 
 	    	printf ("%d : SENDING\n", i) ;
 	    	ackPkt->pktType = DATA ;
-	        while (ackPkt->pktType != ACK)
+	        while (1)
 	        {
 	        	send (sockfd, (char *)datBuf, sizeof(data), 0) ;
-	        	recv (sockfd, ackPkt, sizeof(data), 0) ;
+	        	activity = select (sockfd + 1, &readfds, NULL, NULL, &timeout) ;
 
-	        	if (ackPkt->pktType == ACK)
-	        		printf ("%d : TIMEOUT\n", i) ;
+	        	if (FD_ISSET (sockfd, &readfds))
+	        	{
+	        		read (sockfd, (char *)ackPkt, sizeof(data)) ;	        		
+
+	        		if (ackPkt->pktType != ACK)
+	        			printf ("%d : TIMEOUT %d\n", i, timeout.tv_sec) ;
+	        		else
+	        		{
+	        			printf ("%d : ACK\n", i, timeout.tv_sec) ;
+	        			ackPkt->pktType = DATA ;
+	        			break ;
+	        		}		
+	        	}
+
+	        	timeout.tv_sec = 2 ;
+	        	timeout.tv_usec = 0 ;
 	        }
-
-	        printf ("%d : ACK\n", i) ;
 	        ackPkt->pktType = DATA ;
 	    }
 
@@ -73,16 +87,19 @@ int main(void)
 	else
 	{
 		struct sockaddr_in server_addr;
-	    int sockfd, i, slen=sizeof(server_addr);
-	    char numDat[BUFLEN] ;
-	    char ackBuf [4] ;
-	    char closeChar ;
+	    int sockfd, i, slen=sizeof(server_addr), activity;
+	    struct timeval timeout = {2,0} ;
+
 	    data *datBuf ;
 	   	data *ackPkt = (data *) malloc (sizeof(data)) ;
 		ackPkt->pktType = DATA ;
 	 
 	    if ((sockfd=socket(AF_INET, SOCK_STREAM, 0)) == -1)
 	        die("socket\n");
+
+	    fd_set readfds; 
+	    FD_ZERO(&readfds); 
+	    FD_SET (sockfd, &readfds) ;
 	 
 	    memset((char *) &server_addr, 0, sizeof(server_addr));
 	    server_addr.sin_family = AF_INET;
@@ -105,16 +122,28 @@ int main(void)
 
 	    	printf ("\t%d : SENDING\n", i) ;
 	    	ackPkt->pktType = DATA ;
-	        while (ackPkt->pktType != ACK)
+	        while (1)
 	        {
 	        	send (sockfd, (char *)datBuf, sizeof(data), 0) ;
-	        	recv (sockfd, ackPkt, sizeof(data), 0) ;
+	        	activity = select (sockfd + 1 , &readfds, NULL, NULL, &timeout) ;
 
-	        	if (ackPkt->pktType != ACK)
-	        		printf ("\t%d : TIMEOUT\n", i) ;
+	        	if (FD_ISSET (sockfd, &readfds))
+	        	{
+	        		read (sockfd, (char *)ackPkt, sizeof(data)) ;
+
+	        		if (ackPkt->pktType != ACK)
+	        			printf ("\t%d : TIMEOUT\n", i) ;
+	        		else
+	        		{
+	        			printf ("\t%d : ACK\n", i) ;
+	        			ackPkt->pktType = DATA ;
+	        			break ;
+	        		}		
+	        	}
+
+				timeout.tv_sec = 2 ;
+	        	timeout.tv_usec = 0 ;
 	        }
-
-	        printf ("\t%d : ACK\n", i) ;
 	        ackPkt->pktType = DATA ;
 	    }
 

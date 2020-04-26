@@ -1,5 +1,5 @@
 #define PACKET_SIZE 4
-#define DROP 0.25
+#define DROP 0.90
 
 typedef struct _dat data ;
 

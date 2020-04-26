@@ -123,55 +123,48 @@ int main(int argc , char *argv[])
 				perror("accept error"); 
 				exit(EXIT_FAILURE); 
 			} 
-			
-			//inform user of socket number - used in send and receive commands 
-				
-			//add new socket to array of sockets 
+
 			for (i = 0; i < max_clients; i++) 
 			{ 
-				//if position is empty 
-				if( client_socket[i] == 0 ) 
+				if(!client_socket[i]) 
 				{ 
 					client_socket[i] = new_socket; 
 					break; 
 				} 
 			} 
 		} 
-			
-		//else its some IO operation on some other socket 
-		for (i = 0; i < max_clients; i++) 
-		{ 
-			sd = client_socket[i]; 
-				
-			if (FD_ISSET( sd , &readfds)) 
+		else //else its some IO operation on some other socket 
+		{
+			for (i = 0; i < max_clients; i++) 
 			{ 
-				//Check if it was for closing , and also read the 
-				//incoming message 
-				if ((valread = recv(sd , datBuf, sizeof(data), 0)) == 0) 
-				{ 						
-					close (sd); 
-					client_socket[i] = 0; 
-					disconnect++ ;
-				} 	
-				else
+				sd = client_socket[i]; 
+					
+				if (FD_ISSET( sd , &readfds)) 
 				{ 
-					//buffer[valread] = '\0'; 
-					//printf ("%d : (%d, %d) , (%d, %d) --> %s \n", datBuf->channel, datBuf->pktType, datBuf->last, datBuf->payload, datBuf->offset, datBuf->stuff);
-					if (getRand () > DROP)
-					{
-						ackPkt->pktType = ACK ;
-						printf ("%s : (%s, %s) , (%d, %d) --> %s \n", channelIDToString (datBuf->channel), packetTypeToString (datBuf->pktType), isLastToString (datBuf->last), datBuf->payload, datBuf->offset, datBuf->stuff);
-						send(sd , ackPkt , sizeof(data) , 0); 
-					}
+					if ((valread = read(sd , datBuf, sizeof(data))) == 0) 
+					{ 						
+						close (sd); 
+						client_socket[i] = 0; 
+						disconnect++ ;
+					} 	
 					else
-					{
-						ackPkt->pktType = DATA ;
-						send (sd, ackPkt, sizeof(data), 0) ;
-					}
+					{ 
+						if (getRand () > DROP)
+						{
+							ackPkt->pktType = ACK ;
+							printf ("%s : (%s, %s) , (%d, %d) --> %s \n", channelIDToString (datBuf->channel), packetTypeToString (datBuf->pktType), isLastToString (datBuf->last), datBuf->payload, datBuf->offset, datBuf->stuff);
+							send(sd , ackPkt , sizeof(data) , 0); 
+						}
+						else
+						{
+							printf ("%d : DROP\n", datBuf->offset/4) ;
+							ackPkt->pktType = DATA ;
+							send (sd, ackPkt, sizeof(data), 0) ;
+						}
+					} 
 				} 
 			} 
-		} 
-
+		}
 		if (disconnect == 2)
 			break ;
 	} 
