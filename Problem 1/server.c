@@ -62,7 +62,7 @@ int main(int argc , char *argv[])
 		perror("bind failed"); 
 		exit(EXIT_FAILURE); 
 	} 
-	printf("Listener on port %d \n", PORT); 
+	printf("Waiting for connection\n"); 
 		
 	//try to specify maximum of 3 pending connections for the master socket 
 	if (listen(master_socket, 2) < 0) 
