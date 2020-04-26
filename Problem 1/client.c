@@ -18,8 +18,6 @@ void die(char *s)
 int main(void)
 {
 	data *datCache [10] ;
-	data *ackPkt = (data *) malloc (sizeof(data)) ;
-	ackPkt->pktType = DATA ;
 
 	if (!fork())
 	{
@@ -29,6 +27,8 @@ int main(void)
 	    char ackBuf [4] ;
 	    char closeChar ;
 	    data *datBuf ;
+	    data *ackPkt = (data *) malloc (sizeof(data)) ;
+		ackPkt->pktType = DATA ;
 	    
 	 
 	    if ((sockfd=socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -53,19 +53,19 @@ int main(void)
 	    	strcpy (datBuf->stuff , "abcd") ;
 	    	datCache[i] = datBuf ;
 
-	        send (sockfd, (char *)datBuf, sizeof(data), 0) ;
-	        recv (sockfd, ackPkt, sizeof(data), 0) ;
+	    	printf ("%d : SENDING\n", i) ;
+	    	ackPkt->pktType = DATA ;
+	        while (ackPkt->pktType != ACK)
+	        {
+	        	send (sockfd, (char *)datBuf, sizeof(data), 0) ;
+	        	recv (sockfd, ackPkt, sizeof(data), 0) ;
 
-	        if (ackPkt->pktType == DATA)
-	        {
-	        	printf ("%d : DROP\n", i) ;
-	        	break ;
+	        	if (ackPkt->pktType == ACK)
+	        		printf ("%d : TIMEOUT\n", i) ;
 	        }
-	        else
-	        {
-	        	printf ("%d : ACK\n", i) ;
-	        	ackPkt->pktType = DATA ;
-	        }
+
+	        printf ("%d : ACK\n", i) ;
+	        ackPkt->pktType = DATA ;
 	    }
 
 	    close(sockfd);
@@ -78,6 +78,8 @@ int main(void)
 	    char ackBuf [4] ;
 	    char closeChar ;
 	    data *datBuf ;
+	   	data *ackPkt = (data *) malloc (sizeof(data)) ;
+		ackPkt->pktType = DATA ;
 	 
 	    if ((sockfd=socket(AF_INET, SOCK_STREAM, 0)) == -1)
 	        die("socket\n");
@@ -99,21 +101,21 @@ int main(void)
 	    	datBuf->pktType = DATA ;
 	    	datBuf->channel = ODD ;
 	    	datCache[i] = datBuf ;
-
 	    	strcpy (datBuf->stuff , "efgh") ;
-	        send (sockfd, (char *)datBuf, sizeof(data), 0) ;
-	        recv (sockfd, ackPkt, sizeof(data), 0) ;
 
-	        if (ackPkt->pktType == DATA)
+	    	printf ("\t%d : SENDING\n", i) ;
+	    	ackPkt->pktType = DATA ;
+	        while (ackPkt->pktType != ACK)
 	        {
-	        	printf ("\t%d : DROP\n", i) ;
-	        	break ;
+	        	send (sockfd, (char *)datBuf, sizeof(data), 0) ;
+	        	recv (sockfd, ackPkt, sizeof(data), 0) ;
+
+	        	if (ackPkt->pktType != ACK)
+	        		printf ("\t%d : TIMEOUT\n", i) ;
 	        }
-	        else
-	        {
-	        	printf ("\t%d : ACK\n", i) ;
-	        	ackPkt->pktType = DATA ;
-	        }
+
+	        printf ("\t%d : ACK\n", i) ;
+	        ackPkt->pktType = DATA ;
 	    }
 
 	    close(sockfd);

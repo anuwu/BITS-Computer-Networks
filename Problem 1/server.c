@@ -28,7 +28,6 @@ int main(int argc , char *argv[])
 	int master_socket , addrlen , new_socket , client_socket[30] , 
 		max_clients = 30 , activity, i , valread , sd; 
 	int max_sd; 
-	int dropPkt = 0 ;
 	struct sockaddr_in address; 
 	data *datBuf = (data *) malloc (sizeof(data));
 
@@ -148,7 +147,7 @@ int main(int argc , char *argv[])
 			{ 
 				//Check if it was for closing , and also read the 
 				//incoming message 
-				if ((valread = read(sd , datBuf, sizeof(data))) == 0) 
+				if ((valread = recv(sd , datBuf, sizeof(data), 0)) == 0) 
 				{ 						
 					close (sd); 
 					client_socket[i] = 0; 
@@ -160,18 +159,20 @@ int main(int argc , char *argv[])
 					//printf ("%d : (%d, %d) , (%d, %d) --> %s \n", datBuf->channel, datBuf->pktType, datBuf->last, datBuf->payload, datBuf->offset, datBuf->stuff);
 					if (getRand () > DROP)
 					{
+						ackPkt->pktType = ACK ;
 						printf ("%s : (%s, %s) , (%d, %d) --> %s \n", channelIDToString (datBuf->channel), packetTypeToString (datBuf->pktType), isLastToString (datBuf->last), datBuf->payload, datBuf->offset, datBuf->stuff);
 						send(sd , ackPkt , sizeof(data) , 0); 
 					}
-					else if (dropPkt == 0)
-						dropPkt = 1 ;
 					else
-						dropPkt = 2 ;
+					{
+						ackPkt->pktType = DATA ;
+						send (sd, ackPkt, sizeof(data), 0) ;
+					}
 				} 
 			} 
 		} 
 
-		if (disconnect == 2 || (disconnect == 1 && dropPkt == 1) || (!disconnect && dropPkt == 2))
+		if (disconnect == 2)
 			break ;
 	} 
 		
