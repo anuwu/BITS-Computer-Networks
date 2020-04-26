@@ -99,8 +99,6 @@ int main(void)
 	    wait (NULL) ;
 	    printf ("Uploading done!\n") ;
 	    close(sockfd);
-
-	    return 0 ;
 	}
 	else
 	{
@@ -138,4 +136,5 @@ int main(void)
 	    }
 	    close(sockfd);
 	}
+	 return 0 ;
 }
