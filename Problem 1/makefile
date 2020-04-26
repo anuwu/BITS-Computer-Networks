@@ -2,6 +2,7 @@ output : client.o server.o helper.o
 	gcc -o client.exe client.o helper.o
 	gcc -o server.exe server.o helper.o
 	make objClean
+	./server.exe
 
 client.o : client.c
 	gcc -c client.c

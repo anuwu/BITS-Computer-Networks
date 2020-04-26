@@ -10,23 +10,33 @@
 #include <sys/socket.h> 
 #include <netinet/in.h> 
 #include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros 
+#include<time.h> 
 #include "dataDef.h"
 	
 #define TRUE 1 
 #define FALSE 0 
 #define PORT 8888
 	
+double getRand ()
+{
+	return rand() / (double)(RAND_MAX) ;
+}
+
 int main(int argc , char *argv[]) 
 { 
 	int opt = TRUE; 
 	int master_socket , addrlen , new_socket , client_socket[30] , 
 		max_clients = 30 , activity, i , valread , sd; 
 	int max_sd; 
+	int dropPkt = 0 ;
 	struct sockaddr_in address; 
 	data *datBuf = (data *) malloc (sizeof(data));
+
+	data *ackPkt = (data *) malloc (sizeof(data)) ;
+	ackPkt->pktType = ACK ;
 		
 	//char buffer[1025]; //data buffer of 1K 
-	char sendAck[4] = "ACK" ;
+	srand (time(0)) ;
 		
 	//set of socket descriptors 
 	fd_set readfds; 
@@ -116,7 +126,6 @@ int main(int argc , char *argv[])
 			} 
 			
 			//inform user of socket number - used in send and receive commands 
-			printf("New connection , socket fd is %d , ip is : %s , port : %d\n" , new_socket , inet_ntoa(address.sin_addr) , ntohs (address.sin_port)) ; 
 				
 			//add new socket to array of sockets 
 			for (i = 0; i < max_clients; i++) 
@@ -139,7 +148,7 @@ int main(int argc , char *argv[])
 			{ 
 				//Check if it was for closing , and also read the 
 				//incoming message 
-				if ((valread = read(sd , datBuf, sizeof(datBuf))) == 0) 
+				if ((valread = read(sd , datBuf, sizeof(data))) == 0) 
 				{ 						
 					close (sd); 
 					client_socket[i] = 0; 
@@ -148,16 +157,24 @@ int main(int argc , char *argv[])
 				else
 				{ 
 					//buffer[valread] = '\0'; 
-					printf ("%s : (%s, %s) , (%d, %d) --> %s \n", channelIDToString (datBuf->channel), packetTypeToString (datBuf->pktType), isLastToString (datBuf->last), datBuf->payload, datBuf->offset, datBuf->stuff);
 					//printf ("%d : (%d, %d) , (%d, %d) --> %s \n", datBuf->channel, datBuf->pktType, datBuf->last, datBuf->payload, datBuf->offset, datBuf->stuff);
-					send(sd , sendAck , 4 , 0); 
+					if (getRand () > DROP)
+					{
+						printf ("%s : (%s, %s) , (%d, %d) --> %s \n", channelIDToString (datBuf->channel), packetTypeToString (datBuf->pktType), isLastToString (datBuf->last), datBuf->payload, datBuf->offset, datBuf->stuff);
+						send(sd , ackPkt , sizeof(data) , 0); 
+					}
+					else if (dropPkt == 0)
+						dropPkt = 1 ;
+					else
+						dropPkt = 2 ;
 				} 
 			} 
 		} 
 
-		if (disconnect == 1)
+		if (disconnect == 2 || (disconnect == 1 && dropPkt == 1) || (!disconnect && dropPkt == 2))
 			break ;
 	} 
 		
+	close (master_socket) ;
 	return 0; 
 }

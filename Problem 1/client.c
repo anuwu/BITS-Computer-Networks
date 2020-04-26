@@ -17,6 +17,10 @@ void die(char *s)
 
 int main(void)
 {
+	data *datCache [10] ;
+	data *ackPkt = (data *) malloc (sizeof(data)) ;
+	ackPkt->pktType = DATA ;
+
 	if (!fork())
 	{
 	    struct sockaddr_in server_addr;
@@ -47,13 +51,21 @@ int main(void)
 	    	datBuf->pktType = DATA ;
 	    	datBuf->channel = EVEN ;
 	    	strcpy (datBuf->stuff , "abcd") ;
-
-	    	printf ("%s : (%s, %s) , (%d, %d) --> %s \n", channelIDToString (datBuf->channel), packetTypeToString (datBuf->pktType), isLastToString (datBuf->last), datBuf->payload, datBuf->offset, datBuf->stuff);
+	    	datCache[i] = datBuf ;
 
 	        send (sockfd, (char *)datBuf, sizeof(data), 0) ;
+	        recv (sockfd, ackPkt, sizeof(data), 0) ;
 
-	        ackBuf[read (sockfd, ackBuf, 4)] = '\0' ;
-	        //printf ("%d : %s\n", i, ackBuf) ;
+	        if (ackPkt->pktType == DATA)
+	        {
+	        	printf ("%d : DROP\n", i) ;
+	        	break ;
+	        }
+	        else
+	        {
+	        	printf ("%d : ACK\n", i) ;
+	        	ackPkt->pktType = DATA ;
+	        }
 	    }
 
 	    close(sockfd);
@@ -86,14 +98,22 @@ int main(void)
 	    	datBuf->last = (i == 9)?YES:NO ;
 	    	datBuf->pktType = DATA ;
 	    	datBuf->channel = ODD ;
+	    	datCache[i] = datBuf ;
+
 	    	strcpy (datBuf->stuff , "efgh") ;
-
-	    	printf ("%s : (%s, %s) , (%d, %d) --> %s \n", channelIDToString (datBuf->channel), packetTypeToString (datBuf->pktType), isLastToString (datBuf->last), datBuf->payload, datBuf->offset, datBuf->stuff);
-
 	        send (sockfd, (char *)datBuf, sizeof(data), 0) ;
+	        recv (sockfd, ackPkt, sizeof(data), 0) ;
 
-	        ackBuf[read (sockfd, ackBuf, 4)] = '\0' ;
-	        //printf ("\t%d : %s\n", i, ackBuf) ;
+	        if (ackPkt->pktType == DATA)
+	        {
+	        	printf ("\t%d : DROP\n", i) ;
+	        	break ;
+	        }
+	        else
+	        {
+	        	printf ("\t%d : ACK\n", i) ;
+	        	ackPkt->pktType = DATA ;
+	        }
 	    }
 
 	    close(sockfd);
