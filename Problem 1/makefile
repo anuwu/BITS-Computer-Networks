@@ -1,6 +1,6 @@
-output : client.o server.o
-	gcc -o client.exe client.o
-	gcc -o server.exe server.o
+output : client.o server.o helper.o
+	gcc -o client.exe client.o helper.o
+	gcc -o server.exe server.o helper.o
 	make objClean
 
 client.o : client.c
@@ -8,6 +8,9 @@ client.o : client.c
 
 server.o : server.c
 	gcc -c server.c
+
+helper.o : helper.c
+	gcc -c helper.c
 
 objClean :
 	rm *.o

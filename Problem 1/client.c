@@ -25,6 +25,7 @@ int main(void)
 	    char ackBuf [4] ;
 	    char closeChar ;
 	    data *datBuf ;
+	    
 	 
 	    if ((sockfd=socket(AF_INET, SOCK_STREAM, 0)) == -1)
 	        die("socket\n");
@@ -40,13 +41,19 @@ int main(void)
 	    for (int i = 0 ; i < 10 ; i += 2)
 	    {
 	    	datBuf = (data *) malloc (sizeof(data)) ;
-	    	datBuf->num = i ;
-	    	datBuf->alph = 'a' + i ;
+	    	datBuf->payload = PACKET_SIZE ;
+	    	datBuf->offset = i*PACKET_SIZE ;
+	    	datBuf->last = NO ;
+	    	datBuf->pktType = DATA ;
+	    	datBuf->channel = EVEN ;
+	    	strcpy (datBuf->stuff , "abcd") ;
+
+	    	printf ("%s : (%s, %s) , (%d, %d) --> %s \n", channelIDToString (datBuf->channel), packetTypeToString (datBuf->pktType), isLastToString (datBuf->last), datBuf->payload, datBuf->offset, datBuf->stuff);
 
 	        send (sockfd, (char *)datBuf, sizeof(data), 0) ;
 
 	        ackBuf[read (sockfd, ackBuf, 4)] = '\0' ;
-	        printf ("%d : %s\n", i, ackBuf) ;
+	        //printf ("%d : %s\n", i, ackBuf) ;
 	    }
 
 	    close(sockfd);
@@ -73,14 +80,20 @@ int main(void)
 
 	    for (int i = 1 ; i < 10 ; i += 2)
 	    {
-	    	data *datBuf = (data *) malloc (sizeof(data)) ;
-	    	datBuf->num = i ;
-	    	datBuf->alph = 'a' + i ;
+	    	datBuf = (data *) malloc (sizeof(data)) ;
+	    	datBuf->payload = PACKET_SIZE ;
+	    	datBuf->offset = i*PACKET_SIZE ;
+	    	datBuf->last = (i == 9)?YES:NO ;
+	    	datBuf->pktType = DATA ;
+	    	datBuf->channel = ODD ;
+	    	strcpy (datBuf->stuff , "efgh") ;
+
+	    	printf ("%s : (%s, %s) , (%d, %d) --> %s \n", channelIDToString (datBuf->channel), packetTypeToString (datBuf->pktType), isLastToString (datBuf->last), datBuf->payload, datBuf->offset, datBuf->stuff);
 
 	        send (sockfd, (char *)datBuf, sizeof(data), 0) ;
 
 	        ackBuf[read (sockfd, ackBuf, 4)] = '\0' ;
-	        printf ("%d : %s\n", i, ackBuf) ;
+	        //printf ("\t%d : %s\n", i, ackBuf) ;
 	    }
 
 	    close(sockfd);

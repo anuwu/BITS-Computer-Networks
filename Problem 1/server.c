@@ -31,9 +31,6 @@ int main(int argc , char *argv[])
 	//set of socket descriptors 
 	fd_set readfds; 
 		
-	//a message 
-	char message[100] = "ECHO Daemon v1.0\r\n"; 
-	
 	//initialise all client_socket[] to 0 so not checked 
 	for (i = 0; i < max_clients; i++) 
 		client_socket[i] = 0; 
@@ -151,7 +148,8 @@ int main(int argc , char *argv[])
 				else
 				{ 
 					//buffer[valread] = '\0'; 
-					printf ("%d : %d %c\n", i, datBuf->num, datBuf->alph) ;
+					printf ("%s : (%s, %s) , (%d, %d) --> %s \n", channelIDToString (datBuf->channel), packetTypeToString (datBuf->pktType), isLastToString (datBuf->last), datBuf->payload, datBuf->offset, datBuf->stuff);
+					//printf ("%d : (%d, %d) , (%d, %d) --> %s \n", datBuf->channel, datBuf->pktType, datBuf->last, datBuf->payload, datBuf->offset, datBuf->stuff);
 					send(sd , sendAck , 4 , 0); 
 				} 
 			} 
