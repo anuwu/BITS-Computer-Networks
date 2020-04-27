@@ -27,11 +27,12 @@ int main(int argc , char *argv[])
 
 	int lastRcvd = 0, lastOffset, maxOffset = -1 ;
 
-	
+	data *datBuf = (data *) malloc (sizeof (data)) ;
 	data *ackPkt = (data *) malloc (sizeof (data)) ;
 	ackPkt->pktType = ACK ;
 	serverSock = setSockAddrBind (&serverAddr, SERVER_PORT) ;
 
+	srand (time(0)) ;
 	printf ("Waiting for connection!\n") ;
 	while (TRUE)
 	{
@@ -42,18 +43,16 @@ int main(int argc , char *argv[])
 		}	
 		else
 		{
-			printf ("%d\n", i, datBuf->offset) ;
-			ackPkt->offset = datBuf->offset ;
-			sendto (serverSock, ackPkt, valread, 0, (struct sockaddr *) &otherAddr, slen) ;
-
-			if (datBuf->isLast == YES)
+			if (getRand() > DROP)
 			{
-				lastOffset = datBuf->offset ;
-				lastRcvd = 1 ;
+				printf ("%d ACK\n",  datBuf->offset) ;
+				ackPkt->offset = datBuf->offset ;
+				sendto (serverSock, ackPkt, valread, 0, (struct sockaddr *) &otherAddr, slen) ;
 			}
-			else if (maxOffset > datBuf->offset)
-				maxOffset = datBuf->offset ;
-
+			else
+			{
+				printf ("%d NACK\n",  datBuf->offset) ;
+			}
 		}	
 	}
 

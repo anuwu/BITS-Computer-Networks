@@ -21,6 +21,14 @@ double getDelay ()
 	return 2 * (double)rand()/(double)(RAND_MAX) ;
 }
 
+void resetTimeout (int serverSock, fd_set *serverfd, struct timeval *timeout)
+{
+	FD_ZERO (serverfd) ;
+	FD_SET (serverSock, serverfd) ;
+	timeout->tv_sec = TIMEOUT ;
+	timeout->tv_usec = 0 ;
+}
+
 int main(int argc , char *argv[]) 
 { 
 	int opt = TRUE ;
@@ -28,15 +36,19 @@ int main(int argc , char *argv[])
 	int serverSock ;
 
 	data *ackPkt = (data *) malloc (sizeof (data)) ;
-
 	serverSock = setSockAddr (&serverAddr, SERVER_PORT) ;
+	fd_set serverfd ;
+	FD_ZERO (&serverfd) ;
+	FD_SET (serverSock, &serverfd) ;
 
 	if (fork())
 	{
-		struct sockaddr_in relayEvenAddr, otherAddr ; 
+		struct sockaddr_in relayEvenAddr, serverAckAddr, clientAddr ; 
 		int relayEvenSock, new_socket, clientSock, slen = sizeof(struct sockaddr_in ) ;
-		int i, max_sd, sd, valread, disconnect = 0, activity ;
+		int i, max_sd, sd, valread, disconnect = 0 ;
 		double delay ;
+
+		struct timeval timeout = {TIMEOUT,0} ;
 
 		data *datBuf = (data *) malloc (sizeof (data));
 		relayEvenSock = setSockAddrBind (&relayEvenAddr, RELAY_EVEN_PORT) ;
@@ -45,7 +57,7 @@ int main(int argc , char *argv[])
 		while (TRUE)
 		{
 			// recvfrom(s, buf, BUFLEN, 0, (struct sockaddr *) &serverAddr, &slen)
-			if ((valread = recvfrom(relayEvenSock , datBuf, sizeof(data), 0, (struct sockaddr *) &otherAddr, &slen)) == -1) 
+			if ((valread = recvfrom(relayEvenSock , datBuf, sizeof(data), 0, (struct sockaddr *) &clientAddr, &slen)) == -1) 
 			{ 						
 				printf ("RELAY_EVEN : Closed client side\n") ;
 				disconnect++ ;
@@ -55,13 +67,23 @@ int main(int argc , char *argv[])
 				delay = getDelay () ;
 				if (!fork())
 				{
-					sleep (delay) ;
+					sleep (delay/1000) ;
 
 					printf ("%d : %d %f\n", 0, datBuf->offset, delay) ;
 					sendto (serverSock, datBuf, sizeof(data), 0, (struct sockaddr *) &serverAddr, slen) ;
 
-					recvfrom(serverSock , ackPkt, sizeof(data), 0, (struct sockaddr *) &otherAddr, &slen) ;
-					printf ("%d : %d ACK\n", 0, datBuf->offset) ;
+					select(serverSock + 1 , &serverfd , NULL , NULL , &timeout); 
+					if (FD_ISSET(serverSock, &serverfd))
+					{
+						recvfrom(serverSock , ackPkt, sizeof(data), 0, (struct sockaddr *) &serverAckAddr, &slen) ;
+						printf ("%d : %d ACK\n", 0, ackPkt->offset) ;
+
+						resetTimeout (serverSock, &serverfd, &timeout) ;
+
+						sendto (serverSock, ackPkt, sizeof(data), 0, (struct sockaddr *) &clientAddr, slen) ;
+					}
+					else
+						printf ("NACK\n") ;
 
 					exit (0) ;
 				}
@@ -77,10 +99,12 @@ int main(int argc , char *argv[])
 	}
 	else
 	{
-		struct sockaddr_in relayOddAddr, otherAddr ; 
+		struct sockaddr_in relayOddAddr, serverAckAddr, clientAddr ; 
 		int relayOddSock, new_socket, clientSock, slen = sizeof(struct sockaddr_in) ;
 		int i, max_sd, sd, valread, disconnect = 0, activity ;
 		double delay ;
+
+		struct timeval timeout = {TIMEOUT,0} ;
 
 		data *datBuf = (data *) malloc (sizeof(data));
 		relayOddSock = setSockAddrBind (&relayOddAddr, RELAY_ODD_PORT) ;
@@ -90,7 +114,7 @@ int main(int argc , char *argv[])
 		while (TRUE)
 		{
 			// recvfrom(s, buf, BUFLEN, 0, (struct sockaddr *) &serverAddr, &slen)
-			if ((valread = recvfrom(relayOddSock , datBuf, sizeof(data), 0, (struct sockaddr *) &otherAddr, &slen)) == -1) 
+			if ((valread = recvfrom(relayOddSock , datBuf, sizeof(data), 0, (struct sockaddr *) &clientAddr, &slen)) == -1) 
 			{ 						
 				printf ("RELAY_ODD : Closed client side\n") ;
 				disconnect++ ;
@@ -100,18 +124,27 @@ int main(int argc , char *argv[])
 				delay = getDelay () ;
 				if (!fork())
 				{
-					sleep (delay) ;
+					sleep (delay/1000) ;
 
 					printf ("\t%d : %d %f \n", 1, datBuf->offset, delay) ;
 					sendto (serverSock, datBuf, sizeof(data), 0, (struct sockaddr *) &serverAddr, slen) ;
 
-					recvfrom(serverSock , ackPkt, sizeof(data), 0, (struct sockaddr *) &otherAddr, &slen) ;
-					printf ("\t%d : %d ACK\n", 1, datBuf->offset) ;
+					select(serverSock + 1 , &serverfd , NULL , NULL , &timeout); 
+
+					if (FD_ISSET(serverSock, &serverfd))
+					{
+						recvfrom(serverSock , ackPkt, sizeof(data), 0, (struct sockaddr *) &serverAckAddr, &slen) ;
+						printf ("\t%d : %d ACK\n", 1, ackPkt->offset) ;
+
+						resetTimeout (serverSock, &serverfd, &timeout) ;
+
+						sendto (serverSock, ackPkt, sizeof(data), 0, (struct sockaddr *) &clientAddr, slen) ;
+					}
+					else
+						printf ("\tNACK\n") ;
 
 					exit (0) ;
 				}
-
-				//printf ("\t%d : %d \n", 1 , datBuf->offset) ;
 			}
 
 			if (disconnect == 1)

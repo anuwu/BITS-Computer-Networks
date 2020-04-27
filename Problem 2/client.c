@@ -56,6 +56,8 @@ int main(void)
     	sendto (i % 2 ? relayOddSock : relayEvenSock, datBuf, sizeof(data), 0, (struct sockaddr *)(i % 2 ? &relayOddAddr : &relayEvenAddr), slen) ;
     	printf ("%d : %d %d\n", i, datBuf->offset, (int)strlen(datBuf->stuff)) ;
     	free (datBuf) ;
+
+    	
     }
 
     fclose (fp) ;
