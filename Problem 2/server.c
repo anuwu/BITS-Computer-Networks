@@ -45,13 +45,13 @@ int main(int argc , char *argv[])
 		{
 			if (getRand() > DROP)
 			{
-				printf ("%d ACK\n",  datBuf->offset) ;
+				printf ("SERVER RECEIVED PACKET WITH SEQ NO %d\n",  datBuf->offset) ;
 				ackPkt->offset = datBuf->offset ;
 				sendto (serverSock, ackPkt, valread, 0, (struct sockaddr *) &otherAddr, slen) ;
 			}
 			else
 			{
-				printf ("%d NACK\n",  datBuf->offset) ;
+				printf ("SERVER DROPPING PACKET WITH SEQ NO %d\n",  datBuf->offset) ;
 			}
 		}	
 	}

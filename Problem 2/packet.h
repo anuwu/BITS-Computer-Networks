@@ -37,3 +37,4 @@ char* packetTypeToString (packetType pkt) ;
 char* channelIDToString (channelID cid) ;
 int setSockAddr (struct sockaddr_in *server_addr, int relay_port) ;
 int setSockAddrBind (struct sockaddr_in *server_addr, int relay_port) ;
+void setSock (FILE *fpout, data *datBuf) ;

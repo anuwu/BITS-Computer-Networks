@@ -69,21 +69,21 @@ int main(int argc , char *argv[])
 				{
 					sleep (delay/1000) ;
 
-					printf ("%d : %d %f\n", 0, datBuf->offset, delay) ;
+					printf ("RELAY %d : RECEIVED FROM CLIENT SEQ NO %d\n", 0, datBuf->offset) ;
 					sendto (serverSock, datBuf, sizeof(data), 0, (struct sockaddr *) &serverAddr, slen) ;
 
 					select(serverSock + 1 , &serverfd , NULL , NULL , &timeout); 
 					if (FD_ISSET(serverSock, &serverfd))
 					{
 						recvfrom(serverSock , ackPkt, sizeof(data), 0, (struct sockaddr *) &serverAckAddr, &slen) ;
-						printf ("%d : %d ACK\n", 0, ackPkt->offset) ;
+						printf ("RELAY %d : RECEIVED ACK FROM SERVER WITH SEQ NO %d\n", 0, ackPkt->offset) ;
 
 						resetTimeout (serverSock, &serverfd, &timeout) ;
 
 						sendto (serverSock, ackPkt, sizeof(data), 0, (struct sockaddr *) &clientAddr, slen) ;
 					}
 					else
-						printf ("NACK\n") ;
+						printf ("RELAY %d : TIMEOUT FOR PACKET WITH SEQ NO %d\n",0, datBuf->offset) ;
 
 					exit (0) ;
 				}
@@ -126,7 +126,7 @@ int main(int argc , char *argv[])
 				{
 					sleep (delay/1000) ;
 
-					printf ("\t%d : %d %f \n", 1, datBuf->offset, delay) ;
+					printf ("RELAY %d : RECEIVED FROM CLIENT SEQ NO %d\n", 1, datBuf->offset) ;
 					sendto (serverSock, datBuf, sizeof(data), 0, (struct sockaddr *) &serverAddr, slen) ;
 
 					select(serverSock + 1 , &serverfd , NULL , NULL , &timeout); 
@@ -134,14 +134,14 @@ int main(int argc , char *argv[])
 					if (FD_ISSET(serverSock, &serverfd))
 					{
 						recvfrom(serverSock , ackPkt, sizeof(data), 0, (struct sockaddr *) &serverAckAddr, &slen) ;
-						printf ("\t%d : %d ACK\n", 1, ackPkt->offset) ;
+						printf ("RELAY %d : RECEIVED ACK FROM SERVER WITH SEQ NO %d\n", 1, ackPkt->offset) ;
 
 						resetTimeout (serverSock, &serverfd, &timeout) ;
 
 						sendto (serverSock, ackPkt, sizeof(data), 0, (struct sockaddr *) &clientAddr, slen) ;
 					}
 					else
-						printf ("\tNACK\n") ;
+						printf ("RELAY %d : TIMEOUT FOR PACKET WITH SEQ NO %d\n",0, datBuf->offset) ;
 
 					exit (0) ;
 				}

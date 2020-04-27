@@ -86,3 +86,9 @@ int setSockAddrBind (struct sockaddr_in *server_addr, int relay_port)
      
 	return sockfd ;
 }
+
+void setSock (FILE *fpout, data *datBuf)
+{
+	fseek (fpout, datBuf->offset, SEEK_SET) ;
+	fwrite (datBuf->stuff, sizeof(char), datBuf->payload, fpout) ;
+}
