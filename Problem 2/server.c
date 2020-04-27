@@ -25,14 +25,11 @@ int main(int argc , char *argv[])
 	int serverSock, valRead, disconnected = 0, valread, i ;
 	int slen = sizeof (struct sockaddr_in) ;
 
-	int lastRcvd = 0, lastOffset, maxOffset = -1 ;
-
 	data *datBuf = (data *) malloc (sizeof (data)) ;
 	data *ackPkt = (data *) malloc (sizeof (data)) ;
-	ackPkt->pktType = ACK ;
 	serverSock = setSockAddrBind (&serverAddr, SERVER_PORT) ;
 
-	srand (time(0)) ;
+	i = 1 ;
 	printf ("Waiting for connection!\n") ;
 	while (TRUE)
 	{
@@ -43,17 +40,11 @@ int main(int argc , char *argv[])
 		}	
 		else
 		{
-			if (getRand() > DROP)
-			{
-				printf ("SERVER RECEIVED PACKET WITH SEQ NO %d\n",  datBuf->offset) ;
-				ackPkt->offset = datBuf->offset ;
-				sendto (serverSock, ackPkt, valread, 0, (struct sockaddr *) &otherAddr, slen) ;
-			}
-			else
-			{
-				printf ("SERVER DROPPING PACKET WITH SEQ NO %d\n",  datBuf->offset) ;
-			}
-		}	
+			printf ("%d : %d\n", i, datBuf->offset) ;
+
+		}
+
+		i++ ;
 	}
 
 	return 0; 
