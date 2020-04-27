@@ -5,10 +5,7 @@
 #include<arpa/inet.h>
 #include<sys/socket.h>
 #include <sys/wait.h>
-#include "dataDef.h"
-
-#define BUFLEN 2  //Max length of buffer
-#define SERVER_PORT 8888  // The port on which to send data
+#include "packet.h"
 
 void die(char *s)
 {
@@ -16,7 +13,7 @@ void die(char *s)
     exit(1);
 }
 
-int setServer (struct sockaddr_in *server_addr, fd_set* readfds)
+int setRelay (struct sockaddr_in *server_addr, fd_set* readfds, int receiver_port)
 {
 	int sockfd ;
 
@@ -28,30 +25,33 @@ int setServer (struct sockaddr_in *server_addr, fd_set* readfds)
  
     memset((char *) server_addr, 0, sizeof(struct sockaddr_in));
     server_addr->sin_family = AF_INET;
-    server_addr->sin_port = htons(SERVER_PORT);
+    server_addr->sin_port = htons(receiver_port);
     server_addr->sin_addr.s_addr = inet_addr("127.0.0.1");
      
     if (connect (sockfd, (struct sockaddr *)server_addr, sizeof(struct sockaddr_in)) < 0)
-    	die ("Connection even failed!\n") ;
+    	die ("Connection failed!\n") ;
+    else
+    	printf ("Connecton successful!\n") ;
 
 	return sockfd ;
 }
 
-// resendPrep (&readfds, sockfd, &timeout, &sndCount) ;
 
-int resendPrep (fd_set *readfds, int sockfd, struct timeval *timeout, int *sndCount)
+int resendPrep (fd_set *readfds, int relayEvenSock, int relayOddSock, struct timeval *timeout, int *sndCount)
 {
     (*sndCount)++ ;
 	FD_ZERO(readfds); 
-	FD_SET (sockfd, readfds) ;
+	FD_SET (relayEvenSock, readfds) ;
+	FD_SET (relayOddSock, readfds) ;
 	timeout->tv_sec = TIMEOUT ;
 	timeout->tv_usec = 0 ;
 }
 
 int main(void)
 {
-	struct sockaddr_in server_addr;
-    int sockfd, i, slen = sizeof(server_addr), sndCount, fileSize, noPkts, bytesRead ;
+	struct sockaddr_in relayEvenAddr, relayOddAddr ;
+    int relayEvenSock, relayOddSock, i, slen = sizeof(struct sockaddr_in) ;
+    int sndCount, fileSize, noPkts, bytesRead ;
     struct timeval timeout = {TIMEOUT,0} ;
     fd_set readfds ;
 
@@ -70,100 +70,32 @@ int main(void)
 	printf ("Size of file = %d\n", fileSize) ;
 	printf ("No of packets = %d\n", noPkts) ;
 
-	if (fork())
-	{
-		sockfd = setServer (&server_addr, &readfds) ;
+	relayEvenSock = setRelay (&relayEvenAddr, &readfds, RELAY_EVEN_PORT) ;
+	relayOddSock = setRelay (&relayOddAddr, &readfds, RELAY_ODD_PORT) ;
 
-	    for (int i = 0 ; i < noPkts ; i += 2)
-	    {
-	    	datBuf = (data *) malloc (sizeof(data)) ;
-	    	datBuf->offset = i*PACKET_SIZE ;
-	    	datBuf->last = (i == noPkts-1)?YES:NO ;
-	    	datBuf->pktType = DATA ;
-	    	datBuf->channel = EVEN ;
+	
+    for (int i = 0 ; i < noPkts ; i++)
+    {
+    	datBuf = (data *) malloc (sizeof(data)) ;
+    	datBuf->offset = i*PACKET_SIZE ;
+    	datBuf->last = (i == noPkts-1)?YES:NO ;
+    	datBuf->pktType = DATA ;
+    	datBuf->channel = EVEN ;
 
-	    	fseek (fp, i*PACKET_SIZE, SEEK_SET) ;
-	    	bytesRead = (int)fread (datBuf->stuff , sizeof(char), PACKET_SIZE, fp) ;
-	    	datBuf->stuff[bytesRead] = '\0' ;
-	    	datBuf->payload = bytesRead ;
-	    	datCache[i] = datBuf ;
+    	fseek (fp, i*PACKET_SIZE, SEEK_SET) ;
+    	bytesRead = (int)fread (datBuf->stuff , sizeof(char), PACKET_SIZE, fp) ;
+    	datBuf->stuff[bytesRead] = '\0' ;
+    	datBuf->payload = bytesRead ;
+    	datCache[i] = datBuf ;
 
-	    	//printf ("%d : %s\n", i, datBuf->stuff) ;
-	    	//printf ("%s\n", datBuf->stuff) ;
+    	send (i % 2 ? relayOddSock : relayEvenSock, datBuf, sizeof(data), 0) ;
+    	printf ("%d : %d %s\n", i, datBuf->offset, datBuf->stuff) ;
+    }
+    
 
-	    	sndCount = 1 ;
-	        while (1)
-	        {
-	        	//printf ("%d : SENDING %d\n", i, sndCount) ;
-	        	send (sockfd, (char *)datBuf, sizeof(data), 0) ;
-	        	printf ("SENT PKT : Seq No %d of size %d bytes from channel %d\n", datBuf->offset, datBuf->payload, datBuf->channel) ;
-	        	select (sockfd + 1, &readfds, NULL, NULL, &timeout) ;
-
-	        	if (FD_ISSET (sockfd, &readfds))
-	        	{
-	        		read (sockfd, (char *)ackPkt, sizeof(data)) ;
-	        		//printf ("%d : ACK\n", i) ;
-	        		printf ("RCVD ACK : for PKT with Seq No %d from channel %d\n", ackPkt->offset, ackPkt->channel) ;
-	        		break ;	
-	        	}
-	        	else
-	        		;//printf ("%d : REAL_TIMEOUT\n", i) ;
-
-	        	resendPrep (&readfds, sockfd, &timeout, &sndCount) ;
-
-	        }
-	    }
-
-	    wait (NULL) ;
-	    printf ("Uploading done!\n") ;
-	    fclose (fp) ;
-	    close(sockfd);
-	}
-	else
-	{
-		sockfd = setServer (&server_addr, &readfds) ;
-
-	    for (int i = 1 ; i < noPkts ; i += 2)
-	    {
-	    	datBuf = (data *) malloc (sizeof(data)) ;
-	    	datBuf->offset = i*PACKET_SIZE ;
-	    	datBuf->last = (i == noPkts-1)?YES:NO ;
-	    	datBuf->pktType = DATA ;
-	    	datBuf->channel = ODD ;
-	    	
-	    	fseek (fp, i*PACKET_SIZE, SEEK_SET) ;
-	    	bytesRead = (int)fread (datBuf->stuff , sizeof(char), PACKET_SIZE, fp) ;
-	    	datBuf->stuff[bytesRead] = '\0' ;
-	    	datBuf->payload = bytesRead ;
-	    	datCache[i] = datBuf ;
-
-	    	//printf ("%d : %s\n", i, datBuf->stuff) ;
-	    	//printf ("%s\n", datBuf->stuff) ;
-
-	    	
-	    	sndCount = 1 ;
-	        while (1)
-	        {
-	        	//printf ("\t%d : SENDING %d\n", i, sndCount) ;
-	        	send (sockfd, (char *)datBuf, sizeof(data), 0) ;
-	        	printf ("SENT PKT : Seq No %d of size %d bytes from channel %d\n", datBuf->offset, datBuf->payload, datBuf->channel) ;
-	        	select (sockfd + 1 , &readfds, NULL, NULL, &timeout) ;
-
-	        	if (FD_ISSET (sockfd, &readfds))
-	        	{
-	        		read (sockfd, (char *)ackPkt, sizeof(data)) ;
-	        		//printf ("\t%d : ACK\n", i) ;
-	        		printf ("RCVD ACK : for PKT with Seq No %d from channel %d\n", ackPkt->offset, ackPkt->channel) ;
-	        		break ;	
-	        	}
-	        	else
-	        		;//printf ("\t%d : REAL_TIMEOUT\n", i) ;
-
-				resendPrep (&readfds, sockfd, &timeout, &sndCount) ;
-	        }
-	    }
-	    close(sockfd);
-	}
+    fclose (fp) ;
+    close(relayEvenSock) ;
+    close(relayOddSock) ;
 	
 	return 0 ;
 }

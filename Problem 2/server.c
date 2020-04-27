@@ -11,11 +11,14 @@
 #include <netinet/in.h> 
 #include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros 
 #include<time.h> 
-#include "dataDef.h"
+#include "packet.h"
 	
 #define TRUE 1 
 #define FALSE 0 
-#define PORT 8888
+
+#define SERVER_PORT 8888
+#define RELAY_EVEN_PORT 9000
+#define RELAY_ODD_PORT 9001
 	
 double getRand ()
 {
