@@ -1,4 +1,4 @@
-#define PACKET_SIZE 4
+#define PACKET_SIZE 100
 #define DROP 0.2
 #define TIMEOUT 2
 

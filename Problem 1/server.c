@@ -27,7 +27,7 @@ int main(int argc , char *argv[])
 	int opt = TRUE; 
 	int master_socket , addrlen , new_socket , client_socket[30] , 
 		max_clients = 30 , activity, i , valread , sd; 
-	int max_sd; 
+	int max_sd, downloadPrompt ; 
 	struct sockaddr_in address; 
 	data *datBuf = (data *) malloc (sizeof(data));
 
@@ -126,6 +126,12 @@ int main(int argc , char *argv[])
 				exit(EXIT_FAILURE); 
 			} 
 
+			if (downloadPrompt)
+			{
+				printf ("Downloading...\n") ;
+				downloadPrompt = 0 ;
+			}
+
 			for (i = 0; i < max_clients; i++) 
 			{ 
 				if(!client_socket[i]) 
@@ -154,7 +160,7 @@ int main(int argc , char *argv[])
 						if (getRand () > DROP)
 						{
 							//printf ("%s : (%s, %s) , (%d, %d) --> %s \n", channelIDToString (datBuf->channel), packetTypeToString (datBuf->pktType), isLastToString (datBuf->last), datBuf->payload, datBuf->offset, datBuf->stuff);
-							printf ("\t%d : RECV --> %s\n", datBuf->offset/4, datBuf->stuff) ;
+							//printf ("\t%d : RECV --> %s\n", datBuf->offset/4, datBuf->stuff) ;
 							fseek (fp, datBuf->offset, SEEK_SET) ;
 							fwrite (datBuf->stuff, sizeof(char), datBuf->payload, fp) ;
 							send(sd , ackPkt , sizeof(data) , 0); 
@@ -167,6 +173,7 @@ int main(int argc , char *argv[])
 			break ;
 	} 
 		
+	printf ("File received at server side\n") ;
 	fclose (fp) ;
 	close (master_socket) ;
 	return 0; 
