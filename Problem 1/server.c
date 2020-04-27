@@ -82,6 +82,8 @@ int main(int argc , char *argv[])
 	//accept the incoming connection 
 	addrlen = sizeof(address); 
 	int disconnect = 0 ;
+
+	FILE *fp = fopen ("output.txt", "w") ;
 		
 	while(TRUE) 
 	{ 
@@ -152,7 +154,9 @@ int main(int argc , char *argv[])
 						if (getRand () > DROP)
 						{
 							//printf ("%s : (%s, %s) , (%d, %d) --> %s \n", channelIDToString (datBuf->channel), packetTypeToString (datBuf->pktType), isLastToString (datBuf->last), datBuf->payload, datBuf->offset, datBuf->stuff);
-							printf ("\t%d : RECV\n", datBuf->offset/4) ;
+							printf ("\t%d : RECV --> %s\n", datBuf->offset/4, datBuf->stuff) ;
+							fseek (fp, datBuf->offset, SEEK_SET) ;
+							fwrite (datBuf->stuff, sizeof(char), datBuf->payload, fp) ;
 							send(sd , ackPkt , sizeof(data) , 0); 
 						}
 					} 
@@ -163,6 +167,7 @@ int main(int argc , char *argv[])
 			break ;
 	} 
 		
+	fclose (fp) ;
 	close (master_socket) ;
 	return 0; 
 }

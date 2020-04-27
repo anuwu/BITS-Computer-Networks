@@ -51,7 +51,7 @@ int resendPrep (fd_set *readfds, int sockfd, struct timeval *timeout, int *sndCo
 int main(void)
 {
 	struct sockaddr_in server_addr;
-    int sockfd, i, slen = sizeof(server_addr), sndCount ;
+    int sockfd, i, slen = sizeof(server_addr), sndCount, fileSize, noPkts, bytesRead ;
     struct timeval timeout = {TIMEOUT,0} ;
     fd_set readfds ;
 
@@ -60,20 +60,36 @@ int main(void)
 	ackPkt = (data *) malloc (sizeof(data)) ;
 	ackPkt->pktType = DATA ;
 
+	FILE *fp = fopen ("input.txt", "r") ;
+
+	fseek (fp, 0, SEEK_END) ;
+	fileSize = ftell (fp) - 1 ;
+	noPkts = fileSize/PACKET_SIZE + ((fileSize % PACKET_SIZE)?1:0) ;
+	fseek (fp, 0, SEEK_SET) ;
+
+	printf ("Size of file = %d\n", fileSize) ;
+	printf ("No of packets = %d\n", noPkts) ;
+
 	if (fork())
 	{
 		sockfd = setServer (&server_addr, &readfds) ;
 
-	    for (int i = 0 ; i < 10 ; i += 2)
+	    for (int i = 0 ; i < noPkts ; i += 2)
 	    {
 	    	datBuf = (data *) malloc (sizeof(data)) ;
-	    	datBuf->payload = PACKET_SIZE ;
 	    	datBuf->offset = i*PACKET_SIZE ;
-	    	datBuf->last = NO ;
+	    	datBuf->last = (i == noPkts-1)?YES:NO ;
 	    	datBuf->pktType = DATA ;
 	    	datBuf->channel = EVEN ;
-	    	strcpy (datBuf->stuff , "abcd") ;
+
+	    	fseek (fp, i*PACKET_SIZE, SEEK_SET) ;
+	    	bytesRead = (int)fread (datBuf->stuff , sizeof(char), PACKET_SIZE, fp) ;
+	    	datBuf->stuff[bytesRead] = '\0' ;
+	    	datBuf->payload = bytesRead ;
 	    	datCache[i] = datBuf ;
+
+	    	//printf ("%d : %s\n", i, datBuf->stuff) ;
+	    	//printf ("%s\n", datBuf->stuff) ;
 
 	    	sndCount = 1 ;
 	        while (1)
@@ -98,23 +114,31 @@ int main(void)
 
 	    wait (NULL) ;
 	    printf ("Uploading done!\n") ;
+	    fclose (fp) ;
 	    close(sockfd);
 	}
 	else
 	{
 		sockfd = setServer (&server_addr, &readfds) ;
 
-	    for (int i = 1 ; i < 10 ; i += 2)
+	    for (int i = 1 ; i < noPkts ; i += 2)
 	    {
 	    	datBuf = (data *) malloc (sizeof(data)) ;
-	    	datBuf->payload = PACKET_SIZE ;
 	    	datBuf->offset = i*PACKET_SIZE ;
-	    	datBuf->last = (i == 9)?YES:NO ;
+	    	datBuf->last = (i == noPkts-1)?YES:NO ;
 	    	datBuf->pktType = DATA ;
 	    	datBuf->channel = ODD ;
+	    	
+	    	fseek (fp, i*PACKET_SIZE, SEEK_SET) ;
+	    	bytesRead = (int)fread (datBuf->stuff , sizeof(char), PACKET_SIZE, fp) ;
+	    	datBuf->stuff[bytesRead] = '\0' ;
+	    	datBuf->payload = bytesRead ;
 	    	datCache[i] = datBuf ;
-	    	strcpy (datBuf->stuff , "efgh") ;
 
+	    	//printf ("%d : %s\n", i, datBuf->stuff) ;
+	    	//printf ("%s\n", datBuf->stuff) ;
+
+	    	
 	    	sndCount = 1 ;
 	        while (1)
 	        {
@@ -136,5 +160,6 @@ int main(void)
 	    }
 	    close(sockfd);
 	}
-	 return 0 ;
+	
+	return 0 ;
 }
