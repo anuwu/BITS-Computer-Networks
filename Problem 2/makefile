@@ -1,7 +1,7 @@
-output : client.o server.o helper.o relay.o
-	gcc -o relay.exe relay.o helper.o
-	gcc -o client.exe client.o helper.o
-	gcc -o server.exe server.o helper.o
+output : client.o helper.o relay.o server.o
+	gcc -o relay relay.o helper.o
+	gcc -o client client.o helper.o
+	gcc -o server server.o helper.o
 	make objClean
 	
 relay.o : relay.c
