@@ -29,7 +29,6 @@ struct _dat
 	int offset ;
 	isLast last ;
 	packetType pktType ;
-	channelID channel ;
 	char stuff [PACKET_SIZE+1] ;
 } ;
 

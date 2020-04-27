@@ -46,7 +46,6 @@ int main(void)
     	datBuf->offset = i*PACKET_SIZE ;
     	datBuf->last = (i == noPkts-1)?YES:NO ;
     	datBuf->pktType = DATA ;
-    	datBuf->channel = EVEN ;
 
     	fseek (fp, i*PACKET_SIZE, SEEK_SET) ;
     	bytesRead = (int)fread (datBuf->stuff , sizeof(char), PACKET_SIZE, fp) ;
@@ -58,8 +57,6 @@ int main(void)
     	printf ("%d : %d %d\n", i, datBuf->offset, (int)strlen(datBuf->stuff)) ;
     	free (datBuf) ;
     }
-
-    	
 
     fclose (fp) ;
     close(relayEvenSock) ;

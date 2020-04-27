@@ -24,9 +24,10 @@ double getDelay ()
 int main(int argc , char *argv[]) 
 { 
 	int opt = TRUE ;
-
 	struct sockaddr_in serverAddr ;
 	int serverSock ;
+
+	data *ackPkt = (data *) malloc (sizeof (data)) ;
 
 	serverSock = setSockAddr (&serverAddr, SERVER_PORT) ;
 
@@ -37,7 +38,7 @@ int main(int argc , char *argv[])
 		int i, max_sd, sd, valread, disconnect = 0, activity ;
 		double delay ;
 
-		data *datBuf = (data *) malloc (sizeof(data));
+		data *datBuf = (data *) malloc (sizeof (data));
 		relayEvenSock = setSockAddrBind (&relayEvenAddr, RELAY_EVEN_PORT) ;
 
 		printf("RELAY_EVEN : Waiting for connection\n"); 
@@ -55,12 +56,17 @@ int main(int argc , char *argv[])
 				if (!fork())
 				{
 					sleep (delay) ;
+
 					printf ("%d : %d %f\n", 0, datBuf->offset, delay) ;
 					sendto (serverSock, datBuf, sizeof(data), 0, (struct sockaddr *) &serverAddr, slen) ;
+
+					recvfrom(serverSock , ackPkt, sizeof(data), 0, (struct sockaddr *) &otherAddr, &slen) ;
+					printf ("%d : %d ACK\n", 0, datBuf->offset) ;
+
 					exit (0) ;
 				}
 
-				printf ("%d : %d \n", 0 , datBuf->offset) ;
+				//printf ("%d : %d \n", 0 , datBuf->offset) ;
 			}
 
 			if (disconnect == 1)
@@ -95,12 +101,17 @@ int main(int argc , char *argv[])
 				if (!fork())
 				{
 					sleep (delay) ;
+
 					printf ("\t%d : %d %f \n", 1, datBuf->offset, delay) ;
 					sendto (serverSock, datBuf, sizeof(data), 0, (struct sockaddr *) &serverAddr, slen) ;
+
+					recvfrom(serverSock , ackPkt, sizeof(data), 0, (struct sockaddr *) &otherAddr, &slen) ;
+					printf ("\t%d : %d ACK\n", 1, datBuf->offset) ;
+
 					exit (0) ;
 				}
 
-				printf ("\t%d : %d \n", 1 , datBuf->offset) ;
+				//printf ("\t%d : %d \n", 1 , datBuf->offset) ;
 			}
 
 			if (disconnect == 1)
