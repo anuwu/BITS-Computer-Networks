@@ -1,4 +1,5 @@
 #define PACKET_SIZE 100
+#define WINDOW_SIZE 4
 #define DROP 0.2
 #define TIMEOUT 2
 
@@ -29,7 +30,6 @@ struct _dat
 	int offset ;
 	isLast last ;
 	packetType pktType ;
-	channelID channel ;
 	char stuff [PACKET_SIZE+1] ;
 } ;
 

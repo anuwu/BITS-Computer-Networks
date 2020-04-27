@@ -13,6 +13,47 @@ void die(char *s)
     exit(1);
 }
 
+void sendInWindow (int *windowPktStat, int *windowPktOffset, data **datCache, int windowStart, int *latestPkt, int noPkts, int relayEvenSock, int relayOddSock, struct sockaddr_in* relayEvenAddr, struct sockaddr_in* relayOddAddr, FILE *fp)
+{
+    int i , bytesRead ;
+    data *datPkt ;
+
+    for (i = 0 ; i < WINDOW_SIZE ; i++)
+    {
+        if (!windowPktStat[i])
+        {
+            windowPktOffset[i] = (windowStart + i) * PACKET_SIZE ;
+            datPkt = (data *) malloc (sizeof (data)) ;
+            datPkt->offset = (windowStart + i)*PACKET_SIZE ;
+            datPkt->last = (windowStart + i == noPkts-1)?YES:NO ;
+            datPkt->pktType = DATA ;
+
+            fseek (fp, (windowStart + i)*PACKET_SIZE, SEEK_SET) ;
+            bytesRead = (int)fread (datPkt->stuff , sizeof(char), PACKET_SIZE, fp) ;
+            datPkt->stuff[bytesRead] = '\0' ;
+            datPkt->payload = bytesRead ;
+            datCache[i] = datPkt ;
+
+            sendto ((windowStart + i) % 2 ? relayOddSock : relayEvenSock, datPkt, sizeof(data), 0, (struct sockaddr *)((windowStart + i) % 2 ? relayOddAddr : relayEvenAddr), sizeof(struct sockaddr_in)) ;
+             printf ("%d : %d\n", (windowStart + i), datPkt->offset) ;
+
+            windowPktStat[i] = 1 ;
+            if (windowStart + i > *latestPkt)
+                *latestPkt = windowStart + i ;
+        }
+    }
+
+}
+
+int unsentInWindow (int *windowPktStat)
+{
+    int i ;
+    for (i = 0 ; i < WINDOW_SIZE ; i++)
+        if (!windowPktStat[i])
+            return 1 ;
+
+    return 0 ;
+}
 
 int main(void)
 {
@@ -21,10 +62,8 @@ int main(void)
     int sndCount, fileSize, noPkts, bytesRead ;
     struct timeval timeout = {TIMEOUT,0} ;
 
-    data *datBuf, *ackPkt ;
-	data *datCache [10] ;
-	ackPkt = (data *) malloc (sizeof(data)) ;
-	ackPkt->pktType = DATA ;
+    data *datPkt, *ackPkt ;
+	data *datCache [WINDOW_SIZE] ;
 
 	FILE *fp = fopen ("input.txt", "r") ;
 
@@ -39,24 +78,30 @@ int main(void)
 	relayEvenSock = setSockAddr (&relayEvenAddr, RELAY_EVEN_PORT) ;
 	relayOddSock = setSockAddr (&relayOddAddr, RELAY_ODD_PORT) ;
 
-	
-    for (int i = 0 ; i < noPkts ; i++)
+    int windowStart = 0, latestPkt = -1 , windowSize = WINDOW_SIZE ;
+    int windowPktOffset[WINDOW_SIZE] ;
+    int windowPktStat[WINDOW_SIZE] ;
+
+    for (i = 0 ; i < WINDOW_SIZE ; i++)
     {
-    	datBuf = (data *) malloc (sizeof(data)) ;
-    	datBuf->offset = i*PACKET_SIZE ;
-    	datBuf->last = (i == noPkts-1)?YES:NO ;
-    	datBuf->pktType = DATA ;
-    	datBuf->channel = EVEN ;
+        windowPktOffset[i] = -1 ;
+        windowPktStat[i] = 0 ;
+    }
 
-    	fseek (fp, i*PACKET_SIZE, SEEK_SET) ;
-    	bytesRead = (int)fread (datBuf->stuff , sizeof(char), PACKET_SIZE, fp) ;
-    	datBuf->stuff[bytesRead] = '\0' ;
-    	datBuf->payload = bytesRead ;
-    	datCache[i] = datBuf ;
+	
+    while (1)
+    {
+        if (unsentInWindow(windowPktStat))
+            sendInWindow (windowPktStat, windowPktOffset, datCache, windowStart, &latestPkt, noPkts, relayEvenSock, relayOddSock, &relayEvenAddr, &relayOddAddr, fp) ;
 
-    	sendto (i % 2 ? relayOddSock : relayEvenSock, datBuf, sizeof(data), 0, (struct sockaddr *)(i % 2 ? &relayOddAddr : &relayEvenAddr), slen) ;
-    	printf ("%d : %d %d\n", i, datBuf->offset, (int)strlen(datBuf->stuff)) ;
-    	free (datBuf) ;
+        break ;
+    }
+
+    printf ("ALL STATUSES - \n") ;
+    for (i = 0 ; i < WINDOW_SIZE ; i++)
+    {
+        //windowPktOffset[i] = -1 ;
+        printf ("%d\n" ,windowPktStat[i]) ;
     }
 
     	

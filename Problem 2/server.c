@@ -25,7 +25,7 @@ int main(int argc , char *argv[])
 	int serverSock, valRead, disconnected = 0, valread, i ;
 	int slen = sizeof (struct sockaddr_in) ;
 
-	data *datBuf = (data *) malloc (sizeof (data)) ;
+	data *datPkt = (data *) malloc (sizeof (data)) ;
 	data *ackPkt = (data *) malloc (sizeof (data)) ;
 	serverSock = setSockAddrBind (&serverAddr, SERVER_PORT) ;
 
@@ -33,15 +33,14 @@ int main(int argc , char *argv[])
 	printf ("Waiting for connection!\n") ;
 	while (TRUE)
 	{
-		if ((valread = recvfrom(serverSock , datBuf, sizeof(data), 0, (struct sockaddr *) &otherAddr, &slen)) == -1) 
+		if ((valread = recvfrom(serverSock , datPkt, sizeof(data), 0, (struct sockaddr *) &otherAddr, &slen)) == -1) 
 		{
 			printf ("Disconnected\n") ;
 			disconnected++ ;
 		}	
 		else
 		{
-			printf ("%d : %d\n", i, datBuf->offset) ;
-
+			printf ("%d : %d\n", i, datPkt->offset) ;
 		}
 
 		i++ ;
