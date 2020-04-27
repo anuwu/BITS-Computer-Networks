@@ -20,4 +20,4 @@ objClean :
 	rm *.o
 
 clean :
-	rm *.exe
+	rm -f relay server client

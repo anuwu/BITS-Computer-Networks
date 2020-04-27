@@ -13,19 +13,16 @@ void die(char *s)
     exit(1);
 }
 
-int setRelay (struct sockaddr_in *server_addr, fd_set* readfds, int receiver_port)
+int setRelay (struct sockaddr_in *server_addr, int relay_port)
 {
 	int sockfd ;
 
-	if ((sockfd=socket(AF_INET, SOCK_STREAM, 0)) == -1)
+	if ((sockfd=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
         die("socket\n");
-
-    FD_ZERO(readfds); 
-    FD_SET (sockfd, readfds) ;
  
     memset((char *) server_addr, 0, sizeof(struct sockaddr_in));
     server_addr->sin_family = AF_INET;
-    server_addr->sin_port = htons(receiver_port);
+    server_addr->sin_port = htons(relay_port);
     server_addr->sin_addr.s_addr = inet_addr("127.0.0.1");
      
     if (connect (sockfd, (struct sockaddr *)server_addr, sizeof(struct sockaddr_in)) < 0)
@@ -36,24 +33,12 @@ int setRelay (struct sockaddr_in *server_addr, fd_set* readfds, int receiver_por
 	return sockfd ;
 }
 
-
-int resendPrep (fd_set *readfds, int relayEvenSock, int relayOddSock, struct timeval *timeout, int *sndCount)
-{
-    (*sndCount)++ ;
-	FD_ZERO(readfds); 
-	FD_SET (relayEvenSock, readfds) ;
-	FD_SET (relayOddSock, readfds) ;
-	timeout->tv_sec = TIMEOUT ;
-	timeout->tv_usec = 0 ;
-}
-
 int main(void)
 {
-	struct sockaddr_in relayEvenAddr, relayOddAddr ;
+	struct sockaddr_in otherAddrEven, otherAddrOdd ;
     int relayEvenSock, relayOddSock, i, slen = sizeof(struct sockaddr_in) ;
     int sndCount, fileSize, noPkts, bytesRead ;
     struct timeval timeout = {TIMEOUT,0} ;
-    fd_set readfds ;
 
     data *datBuf, *ackPkt ;
 	data *datCache [10] ;
@@ -63,15 +48,15 @@ int main(void)
 	FILE *fp = fopen ("input.txt", "r") ;
 
 	fseek (fp, 0, SEEK_END) ;
-	fileSize = ftell (fp) - 1 ;
+	fileSize = ftell (fp)  ;
 	noPkts = fileSize/PACKET_SIZE + ((fileSize % PACKET_SIZE)?1:0) ;
 	fseek (fp, 0, SEEK_SET) ;
 
 	printf ("Size of file = %d\n", fileSize) ;
 	printf ("No of packets = %d\n", noPkts) ;
 
-	relayEvenSock = setRelay (&relayEvenAddr, &readfds, RELAY_EVEN_PORT) ;
-	relayOddSock = setRelay (&relayOddAddr, &readfds, RELAY_ODD_PORT) ;
+	relayEvenSock = setRelay (&otherAddrEven, RELAY_EVEN_PORT) ;
+	relayOddSock = setRelay (&otherAddrOdd, RELAY_ODD_PORT) ;
 
 	
     for (int i = 0 ; i < noPkts ; i++)
@@ -88,14 +73,17 @@ int main(void)
     	datBuf->payload = bytesRead ;
     	datCache[i] = datBuf ;
 
-    	send (i % 2 ? relayOddSock : relayEvenSock, datBuf, sizeof(data), 0) ;
-    	printf ("%d : %d\n", i, datBuf->offset) ;
+    	sendto (i % 2 ? relayOddSock : relayEvenSock, datBuf, sizeof(data), 0, (struct sockaddr *)(i % 2 ? &otherAddrOdd : &otherAddrEven), slen) ;
+    	printf ("%d : %d %d\n", i, datBuf->offset, (int)strlen(datBuf->stuff)) ;
+    	free (datBuf) ;
     }
-    
+
+    	
 
     fclose (fp) ;
     close(relayEvenSock) ;
     close(relayOddSock) ;
-	
-	return 0 ;
+
+    printf ("Closed both\n") ;
+    exit (0) ;
 }

@@ -15,10 +15,6 @@
 	
 #define TRUE 1 
 #define FALSE 0 
-
-#define SERVER_PORT 8888
-#define RELAY_EVEN_PORT 9000
-#define RELAY_ODD_PORT 9001
 	
 double getRand ()
 {
@@ -37,9 +33,6 @@ int main(int argc , char *argv[])
 	data *ackPkt = (data *) malloc (sizeof(data)) ;
 	ackPkt->pktType = ACK ;
 		
-	//char buffer[1025]; //data buffer of 1K 
-	srand (time(0)) ;
-		
 	//set of socket descriptors 
 	fd_set readfds; 
 		
@@ -49,7 +42,7 @@ int main(int argc , char *argv[])
 	
 		
 	//create a master socket 
-	if( (master_socket = socket(AF_INET , SOCK_STREAM , 0)) == 0) 
+	if( (master_socket = socket(AF_INET , SOCK_STREAM , IPPROTO_UDP)) == 0) 
 	{ 
 		perror("Server socket creation failed"); 
 		exit(EXIT_FAILURE); 
@@ -150,7 +143,6 @@ int main(int argc , char *argv[])
 			for (i = 0; i < max_clients; i++) 
 			{ 
 				sd = client_socket[i]; 
-					
 				if (FD_ISSET( sd , &readfds)) 
 				{ 
 					if ((valread = read(sd , datBuf, sizeof(data))) == 0) 
