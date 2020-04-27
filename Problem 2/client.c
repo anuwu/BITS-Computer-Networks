@@ -89,7 +89,7 @@ int main(void)
     	datCache[i] = datBuf ;
 
     	send (i % 2 ? relayOddSock : relayEvenSock, datBuf, sizeof(data), 0) ;
-    	printf ("%d : %d %s\n", i, datBuf->offset, datBuf->stuff) ;
+    	printf ("%d : %d\n", i, datBuf->offset) ;
     }
     
 

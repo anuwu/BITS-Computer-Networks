@@ -5,7 +5,7 @@
 #include<arpa/inet.h>
 #include<sys/socket.h>
 #include <sys/wait.h>
-#include "dataDef.h"
+#include "packet.h"
 
 #define BUFLEN 2  //Max length of buffer
 #define SERVER_PORT 8888  // The port on which to send data

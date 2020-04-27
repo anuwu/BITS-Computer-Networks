@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "dataDef.h"
+#include "packet.h"
 
 char* isLastToString (isLast i)
 {
