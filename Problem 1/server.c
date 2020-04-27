@@ -25,8 +25,8 @@ double getRand ()
 int main(int argc , char *argv[]) 
 { 
 	int opt = TRUE; 
-	int master_socket , addrlen , new_socket , client_socket[30] , 
-		max_clients = 30 , activity, i , valread , sd; 
+	int master_socket , addrlen , new_socket , client_socket[3] , 
+		max_clients = 3 , activity, i , valread , sd; 
 	int max_sd, downloadPrompt ; 
 	struct sockaddr_in address; 
 	data *datBuf = (data *) malloc (sizeof(data));
@@ -43,6 +43,7 @@ int main(int argc , char *argv[])
 	//initialise all client_socket[] to 0 so not checked 
 	for (i = 0; i < max_clients; i++) 
 		client_socket[i] = 0; 
+	
 		
 	//create a master socket 
 	if( (master_socket = socket(AF_INET , SOCK_STREAM , 0)) == 0) 
@@ -159,11 +160,14 @@ int main(int argc , char *argv[])
 					{ 
 						if (getRand () > DROP)
 						{
-							//printf ("%s : (%s, %s) , (%d, %d) --> %s \n", channelIDToString (datBuf->channel), packetTypeToString (datBuf->pktType), isLastToString (datBuf->last), datBuf->payload, datBuf->offset, datBuf->stuff);
-							//printf ("\t%d : RECV --> %s\n", datBuf->offset/4, datBuf->stuff) ;
+							printf ("RCVD PKT : Seq No %d of size %d bytes from channel %d\n", datBuf->offset, datBuf->payload, datBuf->channel) ;
 							fseek (fp, datBuf->offset, SEEK_SET) ;
 							fwrite (datBuf->stuff, sizeof(char), datBuf->payload, fp) ;
+
+							ackPkt->offset = datBuf->offset ;
+							ackPkt->channel = datBuf->channel ;
 							send(sd , ackPkt , sizeof(data) , 0); 
+							printf ("SENT ACK : for PKT with Seq No %d from channel %d\n", ackPkt->offset, ackPkt->channel) ;
 						}
 					} 
 				} 

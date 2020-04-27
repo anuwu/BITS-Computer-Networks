@@ -94,14 +94,16 @@ int main(void)
 	    	sndCount = 1 ;
 	        while (1)
 	        {
-	        	printf ("%d : SENDING %d\n", i, sndCount) ;
+	        	//printf ("%d : SENDING %d\n", i, sndCount) ;
 	        	send (sockfd, (char *)datBuf, sizeof(data), 0) ;
+	        	printf ("SENT PKT : Seq No %d of size %d bytes from channel %d\n", datBuf->offset, datBuf->payload, datBuf->channel) ;
 	        	select (sockfd + 1, &readfds, NULL, NULL, &timeout) ;
 
 	        	if (FD_ISSET (sockfd, &readfds))
 	        	{
 	        		read (sockfd, (char *)ackPkt, sizeof(data)) ;
-	        		printf ("%d : ACK\n", i) ;
+	        		//printf ("%d : ACK\n", i) ;
+	        		printf ("RCVD ACK : for PKT with Seq No %d from channel %d\n", ackPkt->offset, ackPkt->channel) ;
 	        		break ;	
 	        	}
 	        	else
@@ -142,14 +144,16 @@ int main(void)
 	    	sndCount = 1 ;
 	        while (1)
 	        {
-	        	printf ("\t%d : SENDING %d\n", i, sndCount) ;
+	        	//printf ("\t%d : SENDING %d\n", i, sndCount) ;
 	        	send (sockfd, (char *)datBuf, sizeof(data), 0) ;
+	        	printf ("SENT PKT : Seq No %d of size %d bytes from channel %d\n", datBuf->offset, datBuf->payload, datBuf->channel) ;
 	        	select (sockfd + 1 , &readfds, NULL, NULL, &timeout) ;
 
 	        	if (FD_ISSET (sockfd, &readfds))
 	        	{
 	        		read (sockfd, (char *)ackPkt, sizeof(data)) ;
-	        		printf ("\t%d : ACK\n", i) ;
+	        		//printf ("\t%d : ACK\n", i) ;
+	        		printf ("RCVD ACK : for PKT with Seq No %d from channel %d\n", ackPkt->offset, ackPkt->channel) ;
 	        		break ;	
 	        	}
 	        	else
