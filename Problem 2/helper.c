@@ -4,6 +4,7 @@
 #include<unistd.h>
 #include<arpa/inet.h>
 #include<sys/socket.h>
+#include<fcntl.h>
 #include "packet.h"
 
 char* isLastToString (isLast i)
@@ -47,7 +48,7 @@ char* channelIDToString (channelID cid)
 
 int setSockAddr (struct sockaddr_in *server_addr, int relay_port)
 {
-	int sockfd ;
+	int sockfd, flags ;
 
 	if ((sockfd=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
 	{
@@ -59,24 +60,17 @@ int setSockAddr (struct sockaddr_in *server_addr, int relay_port)
     server_addr->sin_family = AF_INET;
     server_addr->sin_port = htons(relay_port);
     server_addr->sin_addr.s_addr = inet_addr("127.0.0.1");
+
+    flags = fcntl(sockfd, F_GETFL);
+    flags |= O_NONBLOCK;
+    fcntl(sockfd, F_SETFL, flags);
      
 	return sockfd ;
 }
 
 int setSockAddrBind (struct sockaddr_in *server_addr, int relay_port)
 {
-	int sockfd ;
-
-	if ((sockfd=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
-	{
-		printf ("Socket creation error\n") ;
-        exit (0) ;
-	}
- 
-    memset((char *) server_addr, 0, sizeof(struct sockaddr_in));
-    server_addr->sin_family = AF_INET;
-    server_addr->sin_port = htons(relay_port);
-    server_addr->sin_addr.s_addr = inet_addr("127.0.0.1");
+	int sockfd = setSockAddr (server_addr, relay_port) ;
 
     if (bind(sockfd, (struct sockaddr *)server_addr, sizeof(struct sockaddr_in))<0) 
 	{ 

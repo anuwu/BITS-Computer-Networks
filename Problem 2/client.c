@@ -137,15 +137,6 @@ int main(void)
     FD_SET (relayEvenSock, &relayfds) ;
     FD_SET (relayOddSock, &relayfds) ;
 
-    int flags = fcntl(relayEvenSock, F_GETFL);
-    flags |= O_NONBLOCK;
-    fcntl(relayEvenSock, F_SETFL, flags);
-
-    flags = fcntl(relayOddSock, F_GETFL);
-    flags |= O_NONBLOCK;
-    fcntl(relayOddSock, F_SETFL, flags);
-
-
     maxfd = relayEvenSock > relayOddSock ? relayEvenSock : relayOddSock ;
 
     /* ------------------------------------------------------ */
