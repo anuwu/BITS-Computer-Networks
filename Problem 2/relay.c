@@ -38,22 +38,9 @@ int main(int argc , char *argv[])
 	data *ackPkt = (data *) malloc (sizeof (data)) ;
 	ackPkt->pktType = ACK ;
 
-	/*
-	flags = fcntl(serverSock, F_GETFL);
-    flags |= O_NONBLOCK;
-    fcntl(serverSock, F_SETFL, flags);
-    */
-
-
 	if (fork())
 	{
 		relayEvenSock = setSockAddrBind (&relayEvenAddr, RELAY_EVEN_PORT) ;
-
-		/*
-		flags = fcntl(relayEvenSock, F_GETFL);
-	    flags |= O_NONBLOCK;
-	    fcntl(relayEvenSock, F_SETFL, flags);
-	    */
 
 		fd_set evenfds ;
 		FD_ZERO (&evenfds) ;
@@ -74,7 +61,7 @@ int main(int argc , char *argv[])
 					if (!fork())
 					{
 						sleep (delay/1000) ;
-						printf ("%d : %d\n", 0, datPkt->offset) ;
+						printf ("%d : RECV\n", datPkt->offset) ;
 						sendto (serverSock, datPkt, sizeof(data), 0, (struct sockaddr *) &serverAddr, slen) ;
 						exit (0) ;
 					}
@@ -86,7 +73,7 @@ int main(int argc , char *argv[])
 				while (recvfrom(serverSock , pkt, sizeof(data), 0, (struct sockaddr *) &serverAddr, &slen) != -1)
 				{
 					ackPkt = pkt ;
-					printf ("EVEN %d : ACK\n", ackPkt->offset) ;
+					printf ("%d : ACK\n", ackPkt->offset) ;
 					sendto (relayEvenSock, ackPkt, sizeof(data), 0, (struct sockaddr *)&clientAddr, slen) ;
 				}
 			}
@@ -101,12 +88,6 @@ int main(int argc , char *argv[])
 	else
 	{
 		relayOddSock = setSockAddrBind (&relayOddAddr, RELAY_ODD_PORT) ;
-
-		/*
-		flags = fcntl(relayOddSock, F_GETFL);
-	    flags |= O_NONBLOCK;
-	    fcntl(relayOddSock, F_SETFL, flags);
-	    */
 
 		fd_set oddfds ;
 		FD_ZERO (&oddfds) ;
@@ -128,7 +109,7 @@ int main(int argc , char *argv[])
 					if (!fork())
 					{
 						sleep (delay/1000) ;
-						printf ("\t%d : %d\n", 1, datPkt->offset) ;
+						printf ("%d : RECV\n", datPkt->offset) ;
 						sendto (serverSock, datPkt, sizeof(data), 0, (struct sockaddr *) &serverAddr, slen) ;
 						exit (0) ;
 					}
@@ -141,7 +122,7 @@ int main(int argc , char *argv[])
 				{
 					// ACK packet
 					ackPkt = pkt ;
-					printf ("\tODD %d : ACK\n", ackPkt->offset) ;
+					printf ("%d : ACK\n", ackPkt->offset) ;
 					sendto (relayOddSock, ackPkt, sizeof(data), 0, (struct sockaddr *)&clientAddr, slen) ;
 				}
 			}

@@ -16,7 +16,7 @@ typedef enum _isLast
 
 typedef enum _packetType
 {
-	DATA, ACK
+	DATA, ACK, CLOSE
 } packetType ;
 
 typedef enum _channelID

@@ -36,7 +36,7 @@ void sendPktInWindow (int *windowPktStat, int *windowPktOffset, data **datCache,
             datCache[i] = datPkt ;
 
             sendto ((windowStart + i) % 2 ? relayOddSock : relayEvenSock, datPkt, sizeof(data), 0, (struct sockaddr *)((windowStart + i) % 2 ? relayOddAddr : relayEvenAddr), sizeof(struct sockaddr_in)) ;
-             printf ("SEND %d : %d\n", (windowStart + i), datPkt->offset) ;
+             printf ("%d : SEND\n", datPkt->offset) ;
 
             windowPktStat[i] = 1 ;
             if (windowStart + i > *latestPkt)
@@ -54,7 +54,7 @@ void sendTmoutPktInWindow (int *windowPktStat, data **datCache, int windowStart,
         if (windowPktStat[i] == 1)
         {
             sendto ((windowStart + i) % 2 ? relayOddSock : relayEvenSock, datCache[i], sizeof(data), 0, (struct sockaddr *)((windowStart + i) % 2 ? relayOddAddr : relayEvenAddr), sizeof(struct sockaddr_in)) ;
-            printf ("RESEND %d : %d\n", (windowStart + i), datCache[i]->offset) ;
+            printf ("%d : RESEND\n", datCache[i]->offset) ;
         }
     }
 
@@ -162,7 +162,6 @@ int main(void)
 
     int detectTmout = 1 ;
 
-	
     while (1)
     {
         if (unsentInWindow(windowPktStat, windowStart, noPkts))
@@ -176,20 +175,11 @@ int main(void)
             while (recvfrom (relayEvenSock, ackPkt, sizeof(data), 0, (struct sockaddr *) &relayEvenAddr, &slen) != -1)
             {
                 pktNo = ackPkt->offset/PACKET_SIZE ;
-                printf ("EVEN %d : ACK, Window = %d --->", ackPkt->offset, windowStart) ;
+                printf ("%d : ACK\n", ackPkt->offset) ;
                 windowPktStat[pktNo - windowStart] = 2 ;
 
-                for (int k = 0 ; k < WINDOW_SIZE ; k++)
-                    printf (" %d", windowPktStat[k]) ;
-
-                if (pktNo != noPkts - WINDOW_SIZE && pktNo == windowStart)
-                {
-                    shiftWindow (windowPktStat, windowPktOffset, datCache, &windowStart) ;
-                    printf (" | ") ;
-                    for (int k = 0 ; k < WINDOW_SIZE ; k++)
-                        printf (" %d", windowPktStat[k]) ;
-                }
-                printf ("\n") ;
+                if (pktNo < noPkts - WINDOW_SIZE && pktNo == windowStart)
+                    shiftWindow (windowPktStat, windowPktOffset, datCache, &windowStart) ;       
             }
         }
 
@@ -199,31 +189,18 @@ int main(void)
             while (recvfrom (relayOddSock, ackPkt, sizeof(data), 0, (struct sockaddr *) &relayOddAddr, &slen) != -1)
             {
                 pktNo = ackPkt->offset/PACKET_SIZE ;
-                printf ("ODD %d : ACK, Window = %d --->", ackPkt->offset, windowStart) ;
+                printf ("%d : ACK\n", ackPkt->offset) ;
                 windowPktStat[pktNo - windowStart] = 2 ;
 
-                for (int k = 0 ; k < WINDOW_SIZE ; k++)
-                    printf (" %d", windowPktStat[k]) ;
-
-                if (pktNo != noPkts - WINDOW_SIZE && pktNo == windowStart)
-                {
-                    shiftWindow (windowPktStat, windowPktOffset, datCache, &windowStart) ;
-                    printf (" | ") ;
-                    for (int k = 0 ; k < WINDOW_SIZE ; k++)
-                        printf (" %d", windowPktStat[k]) ;
-                }
-                printf ("\n") ;
+                if (pktNo < noPkts - WINDOW_SIZE && pktNo == windowStart)
+                    shiftWindow (windowPktStat, windowPktOffset, datCache, &windowStart) ;    
             }
         }
 
         if (detectTmout)
-        {
-            printf ("\n--------------------------\nTIMEOUT\n--------------------------\n") ;
             sendTmoutPktInWindow (windowPktStat, datCache, windowStart, noPkts, relayEvenSock, relayOddSock, &relayEvenAddr, &relayOddAddr) ;
-            //break ;
-        }
 
-        if (windowStart == noPkts - windowSize && windowAllAck(windowPktStat, windowStart, noPkts))
+        if (windowStart >= noPkts - windowSize && windowAllAck(windowPktStat, windowStart, noPkts))
             break ;
 
         timeout.tv_sec = TIMEOUT ;
@@ -233,11 +210,7 @@ int main(void)
         FD_SET (relayOddSock, &relayfds) ;
     }
 
-
-    printf ("\nALL STATUSES - \n") ;
-    for (i = 0 ; i < WINDOW_SIZE ; i++)
-        printf ("%d\n" ,windowPktStat[i]) ;
-
+    printf ("File successfully uploaded!\n") ;
     	
     fclose (fp) ;
     close(relayEvenSock) ;
