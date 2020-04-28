@@ -14,7 +14,7 @@ void die(char *s)
     exit(1);
 }
 
-void sendInWindow (int *windowPktStat, int *windowPktOffset, data **datCache, int windowStart, int *latestPkt, int noPkts, int relayEvenSock, int relayOddSock, struct sockaddr_in* relayEvenAddr, struct sockaddr_in* relayOddAddr, FILE *fp)
+void sendPktInWindow (int *windowPktStat, int *windowPktOffset, data **datCache, int windowStart, int *latestPkt, int noPkts, int relayEvenSock, int relayOddSock, struct sockaddr_in* relayEvenAddr, struct sockaddr_in* relayOddAddr, FILE *fp)
 {
     int i , bytesRead ;
     data *datPkt ;
@@ -41,6 +41,20 @@ void sendInWindow (int *windowPktStat, int *windowPktOffset, data **datCache, in
             windowPktStat[i] = 1 ;
             if (windowStart + i > *latestPkt)
                 *latestPkt = windowStart + i ;
+        }
+    }
+
+}
+
+void sendTmoutPktInWindow (int *windowPktStat, data **datCache, int windowStart, int noPkts, int relayEvenSock, int relayOddSock, struct sockaddr_in *relayEvenAddr, struct sockaddr_in *relayOddAddr)
+{
+    int i ;
+    for (i = 0 ; i < WINDOW_SIZE && i + windowStart < noPkts ; i++)
+    {
+        if (windowPktStat[i] == 1)
+        {
+            sendto ((windowStart + i) % 2 ? relayOddSock : relayEvenSock, datCache[i], sizeof(data), 0, (struct sockaddr *)((windowStart + i) % 2 ? relayOddAddr : relayEvenAddr), sizeof(struct sockaddr_in)) ;
+            printf ("RESEND %d : %d\n", (windowStart + i), datCache[i]->offset) ;
         }
     }
 
@@ -152,10 +166,9 @@ int main(void)
     while (1)
     {
         if (unsentInWindow(windowPktStat, windowStart, noPkts))
-            sendInWindow (windowPktStat, windowPktOffset, datCache, windowStart, &latestPkt, noPkts, relayEvenSock, relayOddSock, &relayEvenAddr, &relayOddAddr, fp) ;
+            sendPktInWindow (windowPktStat, windowPktOffset, datCache, windowStart, &latestPkt, noPkts, relayEvenSock, relayOddSock, &relayEvenAddr, &relayOddAddr, fp) ;
 
         detectTmout = 1 ;
-        printf ("BLOCK SELECT\n") ;
         select (maxfd + 1 , &relayfds, NULL, NULL, &timeout) ;
         if (FD_ISSET (relayEvenSock, &relayfds))
         {
@@ -205,9 +218,9 @@ int main(void)
 
         if (detectTmout)
         {
-            printf ("TIMEOUT\n") ;
-            sendTmoutInWindow ()
-            break ;
+            printf ("\n--------------------------\nTIMEOUT\n--------------------------\n") ;
+            sendTmoutPktInWindow (windowPktStat, datCache, windowStart, noPkts, relayEvenSock, relayOddSock, &relayEvenAddr, &relayOddAddr) ;
+            //break ;
         }
 
         if (windowStart == noPkts - windowSize && windowAllAck(windowPktStat, windowStart, noPkts))
