@@ -1,6 +1,6 @@
 #define PACKET_SIZE 100
-#define WINDOW_SIZE 7
-#define DROP 0.5
+#define WINDOW_SIZE 10
+#define DROP 0.1
 #define TIMEOUT 2
 
 #define SERVER_PORT 8888

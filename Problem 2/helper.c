@@ -79,13 +79,15 @@ void printTime ()
     int millisec;
     struct tm* tm_info;
     struct timeval tv;
+    struct timespec spec;
 
     gettimeofday(&tv, NULL);
+    clock_gettime(CLOCK_MONOTONIC, &spec);
 
-    millisec = lrint(tv.tv_usec/1000.0) ;
-    if (millisec>=1000) 
+    millisec = round(spec.tv_nsec / 1.0e6);
+    if (millisec >= 999) 
     { 
-	    millisec -=1000;
+	    millisec = 0 ;
 	    tv.tv_sec++;
   	}
 
