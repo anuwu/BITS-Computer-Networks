@@ -42,10 +42,15 @@ int main(int argc , char *argv[])
 		ackPkt->pktType = ACK ;
 		relayEvenSock = setSockAddrBind (&relayEvenAddr, RELAY_EVEN_PORT) ;
 
+		fd_set evenfd ;
+		FD_ZERO (&evenfd) ;
+		FD_SET (relayEvenSock, &evenfd) ;
+
 		printf("RELAY_EVEN : Waiting for connection\n"); 
 		while (TRUE)
 		{
-			if (valread = recvfrom(relayEvenSock , datPkt, sizeof(data), 0, (struct sockaddr *) &otherAddr, &slen)) 
+			select (relayEvenSock + 1 , &evenfd, NULL, NULL, NULL) ;
+			if (FD_ISSET (relayEvenSock, &evenfd) && (valread = recvfrom(relayEvenSock , datPkt, sizeof(data), 0, (struct sockaddr *) &otherAddr, &slen))) 
 			{
 				delay = getDelay () ;
 				if (!fork())
@@ -55,7 +60,9 @@ int main(int argc , char *argv[])
 					//sendto (serverSock, datPkt, sizeof(data), 0, (struct sockaddr *) &serverAddr, slen) ;
 
 					ackPkt->offset = datPkt->offset ;
-					//sendto (serverSock, ackPkt, sizeof(data), 0, (struct sockaddr *) &)
+					printf ("EVEN %d : ACK\n", ackPkt->offset) ;
+					sendto (relayEvenSock, ackPkt, sizeof(data), 0, (struct sockaddr *)&otherAddr, slen) ;
+
 					exit (0) ;
 				}
 			}
@@ -74,26 +81,31 @@ int main(int argc , char *argv[])
 		double delay ;
 
 		data *datPkt = (data *) malloc (sizeof(data));
+		data *ackPkt = (data *) malloc (sizeof (data)) ;
+		ackPkt->pktType = ACK ;
 		relayOddSock = setSockAddrBind (&relayOddAddr, RELAY_ODD_PORT) ;
+
+		fd_set oddfd ;
+		FD_ZERO (&oddfd) ;
+		FD_SET (relayOddSock, &oddfd) ;
 		
 		printf("RELAY_ODD : Waiting for connection\n"); 
 
 		while (TRUE)
 		{
-			// recvfrom(s, buf, BUFLEN, 0, (struct sockaddr *) &serverAddr, &slen)
-			if ((valread = recvfrom(relayOddSock , datPkt, sizeof(data), 0, (struct sockaddr *) &otherAddr, &slen)) == -1) 
-			{ 						
-				printf ("RELAY_ODD : Closed client side\n") ;
-				disconnect++ ;
-			} 	
-			else
+			select (relayOddSock + 1 , &oddfd, NULL, NULL, NULL) ;
+			if (FD_ISSET (relayOddSock, &oddfd) && (valread = recvfrom(relayOddSock , datPkt, sizeof(data), 0, (struct sockaddr *) &otherAddr, &slen)))
 			{
 				delay = getDelay () ;
 				if (!fork())
 				{
 					sleep (delay/1000) ;
 					printf ("\t%d : %d\n", 1, datPkt->offset) ;
-					sendto (serverSock, datPkt, sizeof(data), 0, (struct sockaddr *) &serverAddr, slen) ;
+					//sendto (serverSock, datPkt, sizeof(data), 0, (struct sockaddr *) &serverAddr, slen) ;
+
+					ackPkt->offset = datPkt->offset ;
+					printf ("\tODD %d : ACK\n", ackPkt->offset) ;
+					sendto (relayOddSock, ackPkt, sizeof(data), 0, (struct sockaddr *)&otherAddr, slen) ;
 					exit (0) ;
 				}
 			}
