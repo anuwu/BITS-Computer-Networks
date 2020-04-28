@@ -33,13 +33,12 @@ int main(int argc , char *argv[])
 	int i, max_sd, sd, disconnect = 0, activity, flags ;
 	double delay ;
 
-	data *pkt = (data *) malloc (sizeof (data)) ;
-	data *datPkt ;
+	data *datPkt = (data *) malloc (sizeof (data)) ;
 	data *ackPkt = (data *) malloc (sizeof (data)) ;
-	ackPkt->pktType = ACK ;
 
 	if (fork())
 	{
+		int evenCloseFlag = 0 ;
 		relayEvenSock = setSockAddrBind (&relayEvenAddr, RELAY_EVEN_PORT) ;
 
 		fd_set evenfds ;
@@ -54,9 +53,14 @@ int main(int argc , char *argv[])
 			select (max_sd + 1 , &evenfds, NULL, NULL, NULL) ;
 			if (FD_ISSET (relayEvenSock, &evenfds))
 			{
-				while (recvfrom(relayEvenSock , pkt, sizeof(data), 0, (struct sockaddr *) &clientAddr, &slen) != -1)
+				while (recvfrom(relayEvenSock , datPkt, sizeof(data), 0, (struct sockaddr *) &clientAddr, &slen) != -1)
 				{
-					datPkt = pkt ;
+					if (datPkt->pktType == CLOSE)
+					{
+						evenCloseFlag = 1 ;
+						break ;
+					}
+
 					delay = getDelay () ;
 					if (!fork())
 					{
@@ -68,11 +72,14 @@ int main(int argc , char *argv[])
 				}
 			}
 
+			if (evenCloseFlag)
+				break ;
+
+
 			if (FD_ISSET (serverSock, &evenfds))
 			{
-				while (recvfrom(serverSock , pkt, sizeof(data), 0, (struct sockaddr *) &serverAddr, &slen) != -1)
+				while (recvfrom(serverSock , ackPkt, sizeof(data), 0, (struct sockaddr *) &serverAddr, &slen) != -1)
 				{
-					ackPkt = pkt ;
 					printf ("%d : ACK\n", ackPkt->offset) ;
 					sendto (relayEvenSock, ackPkt, sizeof(data), 0, (struct sockaddr *)&clientAddr, slen) ;
 				}
@@ -83,10 +90,12 @@ int main(int argc , char *argv[])
 			FD_SET (serverSock, &evenfds) ;
 		}
 
+		printf ("Even relay closing\n") ;
 		close (relayEvenSock) ;
 	}
 	else
 	{
+		int oddCloseFlag = 0 ;
 		relayOddSock = setSockAddrBind (&relayOddAddr, RELAY_ODD_PORT) ;
 
 		fd_set oddfds ;
@@ -102,12 +111,18 @@ int main(int argc , char *argv[])
 			select (max_sd + 1 , &oddfds, NULL, NULL, NULL) ;
 			if (FD_ISSET (relayOddSock, &oddfds))
 			{
-				while (recvfrom(relayOddSock , pkt, sizeof(data), 0, (struct sockaddr *) &clientAddr, &slen) != -1)
+				while (recvfrom(relayOddSock , datPkt, sizeof(data), 0, (struct sockaddr *) &clientAddr, &slen) != -1)
 				{
-					datPkt = pkt ;
+					if (datPkt->pktType == CLOSE)
+					{
+						oddCloseFlag = 1 ;
+						break ;
+					}
+
 					delay = getDelay () ;
 					if (!fork())
 					{
+						// 
 						sleep (delay/1000) ;
 						printf ("%d : RECV\n", datPkt->offset) ;
 						sendto (serverSock, datPkt, sizeof(data), 0, (struct sockaddr *) &serverAddr, slen) ;
@@ -116,12 +131,13 @@ int main(int argc , char *argv[])
 				}
 			}
 
+			if (oddCloseFlag)
+				break ;
+
 			if (FD_ISSET (serverSock, &oddfds))
 			{
-				while (recvfrom(serverSock , pkt, sizeof(data), 0, (struct sockaddr *) &serverAddr, &slen) != -1)
+				while (recvfrom(serverSock , ackPkt, sizeof(data), 0, (struct sockaddr *) &serverAddr, &slen) != -1)
 				{
-					// ACK packet
-					ackPkt = pkt ;
 					printf ("%d : ACK\n", ackPkt->offset) ;
 					sendto (relayOddSock, ackPkt, sizeof(data), 0, (struct sockaddr *)&clientAddr, slen) ;
 				}
@@ -131,6 +147,8 @@ int main(int argc , char *argv[])
 			FD_SET (relayOddSock, &oddfds) ;
 			FD_SET (serverSock, &oddfds) ;
 		}
+
+		printf ("Odd relay closing\n") ;
 		close (relayOddSock) ;
 	}
 }

@@ -128,8 +128,11 @@ int main(void)
     int relayEvenSock, relayOddSock, i, slen = sizeof(struct sockaddr_in) ;
     int sndCount, fileSize, noPkts, bytesRead ;
     struct timeval timeout = {TIMEOUT,0} ;
-    data *datPkt, *ackPkt ;
+    data *ackPkt, *closePkt ;
 	data *datCache [WINDOW_SIZE] ;
+
+    ackPkt = (data *) malloc (sizeof(data)) ;
+    closePkt = (data *) malloc (sizeof(data)) ;
 
     /* ------------------------------------------------------ */
 
@@ -211,6 +214,10 @@ int main(void)
     }
 
     printf ("File successfully uploaded!\n") ;
+
+    closePkt->pktType = CLOSE ;
+    sendto (relayEvenSock, closePkt, sizeof(data), 0, (struct sockaddr *) &relayEvenAddr, slen) ;
+    sendto (relayOddSock, closePkt, sizeof(data), 0, (struct sockaddr *) &relayOddAddr, slen) ;
     	
     fclose (fp) ;
     close(relayEvenSock) ;
