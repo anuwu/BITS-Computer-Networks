@@ -15,11 +15,6 @@
 #define TRUE 1 
 #define FALSE 0 
 	
-double getRand ()
-{
-	return rand() / (double)(RAND_MAX) ;
-}
-
 void initRecvOffsets (int *recvOffsets)
 {
 	int i ;
@@ -102,23 +97,20 @@ int main(int argc , char *argv[])
 		{
 			while (recvfrom(serverSock , datPkt, sizeof(data), 0, (struct sockaddr *) &otherAddr, &slen) != -1)
 			{
-				if (getRand() > DROP)
+				printf ("%d : RCVD\n", datPkt->offset) ;
+				updateRecvOffsets (recvOffsets, datPkt->offset) ;
+
+				fseek (fp, datPkt->offset, SEEK_SET) ;
+				fwrite (datPkt->stuff, sizeof(char), datPkt->payload, fp) ;
+
+				if (datPkt->last == YES)
 				{
-					printf ("%d : RCVD\n", datPkt->offset) ;
-					updateRecvOffsets (recvOffsets, datPkt->offset) ;
+					lastFlag = 1 ;
+					lastOffset = datPkt->offset ;
+				}
 
-					fseek (fp, datPkt->offset, SEEK_SET) ;
-					fwrite (datPkt->stuff, sizeof(char), datPkt->payload, fp) ;
-
-					if (datPkt->last == YES)
-					{
-						lastFlag = 1 ;
-						lastOffset = datPkt->offset ;
-					}
-
-					ackPkt->offset = datPkt->offset ;
-					sendto (serverSock, ackPkt, sizeof (data), 0, (struct sockaddr *) &otherAddr, slen) ;
-				}	
+				ackPkt->offset = datPkt->offset ;
+				sendto (serverSock, ackPkt, sizeof (data), 0, (struct sockaddr *) &otherAddr, slen) ;
 			} 
 		}
 

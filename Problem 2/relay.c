@@ -22,6 +22,11 @@ double getDelay ()
 	return 2 * (double)rand()/(double)(RAND_MAX) ;
 }
 
+double getRand ()
+{
+	return (double)rand()/(double)(RAND_MAX) ;
+}
+
 int main(int argc , char *argv[]) 
 { 
 	struct sockaddr_in serverAddr ;
@@ -61,14 +66,19 @@ int main(int argc , char *argv[])
 						break ;
 					}
 
-					delay = getDelay () ;
-					if (!fork())
+					if (getRand () > DROP)
 					{
-						sleep (delay/1000) ;
-						printf ("%d : RECV\n", datPkt->offset) ;
-						sendto (serverSock, datPkt, sizeof(data), 0, (struct sockaddr *) &serverAddr, slen) ;
-						exit (0) ;
+						delay = getDelay () ;
+						if (!fork())
+						{
+							sleep (delay/1000) ;
+							printf ("%d : RECV\n", datPkt->offset) ;
+							sendto (serverSock, datPkt, sizeof(data), 0, (struct sockaddr *) &serverAddr, slen) ;
+							exit (0) ;
+						}
 					}
+					else
+						printf("%d : DROP\n", datPkt->offset) ;
 				}
 			}
 
@@ -119,15 +129,19 @@ int main(int argc , char *argv[])
 						break ;
 					}
 
-					delay = getDelay () ;
-					if (!fork())
+					if (getRand () > DROP)
 					{
-						// 
-						sleep (delay/1000) ;
-						printf ("%d : RECV\n", datPkt->offset) ;
-						sendto (serverSock, datPkt, sizeof(data), 0, (struct sockaddr *) &serverAddr, slen) ;
-						exit (0) ;
+						delay = getDelay () ;
+						if (!fork())
+						{
+							sleep (delay/1000) ;
+							printf ("%d : RECV\n", datPkt->offset) ;
+							sendto (serverSock, datPkt, sizeof(data), 0, (struct sockaddr *) &serverAddr, slen) ;
+							exit (0) ;
+						}
 					}
+					else
+						printf ("%d : DROP\n", datPkt->offset) ;
 				}
 			}
 
