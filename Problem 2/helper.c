@@ -1,10 +1,13 @@
-#include<stdlib.h> //exit(0);
-#include<stdio.h> //printf
-#include<string.h> //memset
-#include<unistd.h>
-#include<arpa/inet.h>
-#include<sys/socket.h>
-#include<fcntl.h>
+#include <stdlib.h> //exit(0);
+#include <stdio.h> //printf
+#include <string.h> //memset
+#include <unistd.h>
+#include <math.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <fcntl.h>
+#include <sys/time.h>
+#include <time.h>
 #include "packet.h"
 
 char* isLastToString (isLast i)
@@ -28,21 +31,10 @@ char* packetTypeToString (packetType pkt)
 			return "DATA" ;
 		case ACK :
 			return "ACK" ;
+		case CLOSE :
+			return "CLOSE" ;
 		default :
 			return "packetType_ERROR" ;	
-	}
-}
-
-char* channelIDToString (channelID cid)
-{
-	switch (cid)
-	{
-		case EVEN :
-			return "EVEN" ;
-		case ODD :
-			return "ODD" ;
-		default :
-			return "channelID_ERROR" ;
 	}
 }
 
@@ -79,4 +71,47 @@ int setSockAddrBind (struct sockaddr_in *server_addr, int relay_port)
 	}
      
 	return sockfd ;
+}
+
+void printTime ()
+{
+    char buffer[15] ;
+    int millisec;
+    struct tm* tm_info;
+    struct timeval tv;
+
+    gettimeofday(&tv, NULL);
+
+    millisec = lrint(tv.tv_usec/1000.0) ;
+    if (millisec>=1000) 
+    { 
+	    millisec -=1000;
+	    tv.tv_sec++;
+  	}
+
+    tm_info = localtime(&tv.tv_sec);
+
+    strftime(buffer, 15, "%H:%M:%S", tm_info);
+    sprintf(buffer, "%s.%03d", buffer, millisec) ;
+
+    printf ("%20s", buffer) ;
+}
+
+void printLog (char *nodeName, char *eventType, data *pkt, char *src, char *dest)
+{
+    printf ("%10s%15s", nodeName, eventType) ;
+    printTime () ;
+    printf ("%20s%10d%15s%15s", packetTypeToString (pkt->pktType), pkt->offset, src, dest) ;
+    printf ("\n") ;
+}
+
+void printHeading ()
+{
+	printf ("\n%10s%15s%20s%20s%10s%15s%15s\n\n", "NODE NAME", "EVENT TYPE", "TIMESTAMP", "PACKET TYPE", "SEQ NO", "SOURCE",  "DESTINATION") ;
+}
+	
+void printLine ()
+{
+	printf ("\n-----------------------------------------------------------------------------------------------------------------\n") ;
+	printf ("-----------------------------------------------------------------------------------------------------------------\n") ;
 }

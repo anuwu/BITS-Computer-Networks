@@ -14,7 +14,9 @@ void die(char *s)
     exit(1);
 }
 
-void sendPktInWindow (int *windowPktStat, int *windowPktOffset, data **datCache, int windowStart, int *latestPkt, int noPkts, int relayEvenSock, int relayOddSock, struct sockaddr_in* relayEvenAddr, struct sockaddr_in* relayOddAddr, FILE *fp)
+
+
+void sendPktInWindow (int *windowPktStat, int *windowPktOffset, data **datCache, int windowStart, int noPkts, int relayEvenSock, int relayOddSock, struct sockaddr_in* relayEvenAddr, struct sockaddr_in* relayOddAddr, FILE *fp)
 {
     int i , bytesRead ;
     data *datPkt ;
@@ -36,11 +38,10 @@ void sendPktInWindow (int *windowPktStat, int *windowPktOffset, data **datCache,
             datCache[i] = datPkt ;
 
             sendto ((windowStart + i) % 2 ? relayOddSock : relayEvenSock, datPkt, sizeof(data), 0, (struct sockaddr *)((windowStart + i) % 2 ? relayOddAddr : relayEvenAddr), sizeof(struct sockaddr_in)) ;
-             printf ("%d : SEND\n", datPkt->offset) ;
+
+            printLog ("CLIENT", "S", datPkt, "CLIENT", (windowStart + i) % 2 ? "RELAY_EVEN" : "RELAY_ODD") ;
 
             windowPktStat[i] = 1 ;
-            if (windowStart + i > *latestPkt)
-                *latestPkt = windowStart + i ;
         }
     }
 
@@ -54,7 +55,9 @@ void sendTmoutPktInWindow (int *windowPktStat, data **datCache, int windowStart,
         if (windowPktStat[i] == 1)
         {
             sendto ((windowStart + i) % 2 ? relayOddSock : relayEvenSock, datCache[i], sizeof(data), 0, (struct sockaddr *)((windowStart + i) % 2 ? relayOddAddr : relayEvenAddr), sizeof(struct sockaddr_in)) ;
-            printf ("%d : RESEND\n", datCache[i]->offset) ;
+
+            printLog ("CLIENT", "TO", datCache[i], "CLIENT", (windowStart + i) % 2 ? "RELAY_EVEN" : "RELAY_ODD") ;
+            printLog ("CLIENT", "RE", datCache[i], "CLIENT", (windowStart + i) % 2 ? "RELAY_EVEN" : "RELAY_ODD") ;
         }
     }
 
@@ -158,17 +161,18 @@ int main(void)
 
     /* ------------------------------------------------------ */
 
-    int pktNo, windowStart = 0, latestPkt = -1 , windowSize = WINDOW_SIZE ;
+    int pktNo, windowStart = 0, windowSize = WINDOW_SIZE ;
     int windowPktOffset[WINDOW_SIZE] ;
     int windowPktStat[WINDOW_SIZE] ;
     initWindow (windowPktStat, windowPktOffset, datCache) ;
 
     int detectTmout = 1 ;
-
+    printLine () ;
+    printHeading () ;
     while (1)
     {
         if (unsentInWindow(windowPktStat, windowStart, noPkts))
-            sendPktInWindow (windowPktStat, windowPktOffset, datCache, windowStart, &latestPkt, noPkts, relayEvenSock, relayOddSock, &relayEvenAddr, &relayOddAddr, fp) ;
+            sendPktInWindow (windowPktStat, windowPktOffset, datCache, windowStart, noPkts, relayEvenSock, relayOddSock, &relayEvenAddr, &relayOddAddr, fp) ;
 
         detectTmout = 1 ;
         select (maxfd + 1 , &relayfds, NULL, NULL, &timeout) ;
@@ -177,8 +181,8 @@ int main(void)
             detectTmout = 0 ;
             while (recvfrom (relayEvenSock, ackPkt, sizeof(data), 0, (struct sockaddr *) &relayEvenAddr, &slen) != -1)
             {
+                printLog ("CLIENT", "R", ackPkt, "RELAY_EVEN", "CLIENT") ;
                 pktNo = ackPkt->offset/PACKET_SIZE ;
-                printf ("%d : ACK\n", ackPkt->offset) ;
                 windowPktStat[pktNo - windowStart] = 2 ;
 
                 if (pktNo < noPkts - WINDOW_SIZE && pktNo == windowStart)
@@ -191,8 +195,8 @@ int main(void)
             detectTmout = 0 ;
             while (recvfrom (relayOddSock, ackPkt, sizeof(data), 0, (struct sockaddr *) &relayOddAddr, &slen) != -1)
             {
+                printLog ("CLIENT", "R", ackPkt, "RELAY_ODD", "CLIENT") ;
                 pktNo = ackPkt->offset/PACKET_SIZE ;
-                printf ("%d : ACK\n", ackPkt->offset) ;
                 windowPktStat[pktNo - windowStart] = 2 ;
 
                 if (pktNo < noPkts - WINDOW_SIZE && pktNo == windowStart)
@@ -213,7 +217,8 @@ int main(void)
         FD_SET (relayOddSock, &relayfds) ;
     }
 
-    printf ("File successfully uploaded!\n") ;
+    printLine () ;
+    printf ("\nFile successfully uploaded!\n") ;
 
     closePkt->pktType = CLOSE ;
     sendto (relayEvenSock, closePkt, sizeof(data), 0, (struct sockaddr *) &relayEvenAddr, slen) ;

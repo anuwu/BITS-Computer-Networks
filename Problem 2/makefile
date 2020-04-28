@@ -1,12 +1,12 @@
 output : client.o helper.o relay.o server.o
-	gcc -o relay relay.o helper.o
-	gcc -o client client.o helper.o
-	gcc -o server server.o helper.o
+	gcc -o relay relay.o helper.o -lm
+	gcc -o client client.o helper.o -lm
+	gcc -o server server.o helper.o -lm
 	make objClean
 
 relay : client.o helper.o relay.o
-	gcc -o relay relay.o helper.o
-	gcc -o client client.o helper.o
+	gcc -o relay relay.o helper.o -lm
+	gcc -o client client.o helper.o -lm
 	make objClean
 	
 relay.o : relay.c

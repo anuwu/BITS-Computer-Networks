@@ -70,8 +70,8 @@ int lastWindowAllRecv (int *recvOffsets, int lastOffset)
 
 int main(int argc , char *argv[]) 
 { 
-	struct sockaddr_in serverAddr, otherAddr ;
-	int serverSock, valRead, disconnected = 0, i, lastFlag = 0, lastOffset ;
+	struct sockaddr_in serverAddr, relayEvenAddr, relayOddAddr, otherAddr ;
+	int serverSock, relayEvenSock, relayOddSock, valRead, disconnected = 0, i, lastFlag = 0, lastOffset, pktNo ;
 	int slen = sizeof (struct sockaddr_in) ;
 	int recvOffsets[WINDOW_SIZE] ;
 
@@ -80,7 +80,10 @@ int main(int argc , char *argv[])
 	data *datPkt = (data *) malloc (sizeof (data)) ;
 	data *ackPkt = (data *) malloc (sizeof (data)) ;
 	ackPkt->pktType = ACK ;
+
 	serverSock = setSockAddrBind (&serverAddr, SERVER_PORT) ;
+	relayEvenSock = setSockAddr (&relayEvenAddr, RELAY_EVEN_PORT) ;
+	relayOddSock = setSockAddr (&relayOddAddr, RELAY_ODD_PORT) ;
 
 	FILE *fp ;
 	fp = fopen ("output.txt", "w") ;
@@ -90,6 +93,9 @@ int main(int argc , char *argv[])
 	FD_SET (serverSock, &serverfd) ;
 
 	printf ("Waiting for connection!\n") ;
+	printLine () ;
+	printHeading () ;
+
 	while (TRUE)
 	{
 		select (serverSock + 1 , &serverfd, NULL, NULL, NULL) ;
@@ -97,7 +103,9 @@ int main(int argc , char *argv[])
 		{
 			while (recvfrom(serverSock , datPkt, sizeof(data), 0, (struct sockaddr *) &otherAddr, &slen) != -1)
 			{
-				printf ("%d : RCVD\n", datPkt->offset) ;
+				pktNo = datPkt->offset / PACKET_SIZE ;
+				printLog ("SERVER", "R", datPkt, pktNo % 2 ? "RELAY_ODD" : "RELAY_EVEN", "SERVER") ;
+
 				updateRecvOffsets (recvOffsets, datPkt->offset) ;
 
 				fseek (fp, datPkt->offset, SEEK_SET) ;
@@ -110,8 +118,10 @@ int main(int argc , char *argv[])
 				}
 
 				ackPkt->offset = datPkt->offset ;
-				sendto (serverSock, ackPkt, sizeof (data), 0, (struct sockaddr *) &otherAddr, slen) ;
-			} 
+
+				sendto (pktNo % 2 ? relayEvenSock:relayOddSock, ackPkt, sizeof (data), 0, (struct sockaddr *) ((pktNo %  2)?&relayOddAddr:&relayEvenAddr) , slen) ;
+				printLog ("SERVER", "S", ackPkt, "SERVER", pktNo % 2 ? "RELAY_ODD" : "RELAY_EVEN") ;
+			}
 		}
 
 		if (lastFlag && lastWindowAllRecv (recvOffsets, lastOffset))
@@ -122,6 +132,7 @@ int main(int argc , char *argv[])
 	}
 
 	fclose (fp) ;
+	printLine () ;
 	printf ("\nFile received successfully at server\n") ;
 	return 0; 
 }
