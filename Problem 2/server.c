@@ -22,28 +22,23 @@ double getRand ()
 int main(int argc , char *argv[]) 
 { 
 	struct sockaddr_in serverAddr, otherAddr ;
-	int serverSock, valRead, disconnected = 0, valread, i ;
+	int serverSock, valRead, disconnected = 0, i ;
 	int slen = sizeof (struct sockaddr_in) ;
 
 	data *datPkt = (data *) malloc (sizeof (data)) ;
 	data *ackPkt = (data *) malloc (sizeof (data)) ;
+	ackPkt->pktType = ACK ;
 	serverSock = setSockAddrBind (&serverAddr, SERVER_PORT) ;
 
-	i = 1 ;
 	printf ("Waiting for connection!\n") ;
 	while (TRUE)
 	{
-		if ((valread = recvfrom(serverSock , datPkt, sizeof(data), 0, (struct sockaddr *) &otherAddr, &slen)) == -1) 
+		if (recvfrom(serverSock , datPkt, sizeof(data), 0, (struct sockaddr *) &otherAddr, &slen))
 		{
-			printf ("Disconnected\n") ;
-			disconnected++ ;
-		}	
-		else
-		{
-			printf ("%d : %d\n", i, datPkt->offset) ;
-		}
-
-		i++ ;
+			printf ("%d : RCVD\n", datPkt->offset) ;
+			ackPkt->offset = datPkt->offset ;
+			sendto (serverSock, ackPkt, sizeof (data), 0, (struct sockaddr *) &otherAddr, slen) ;
+		} 	
 	}
 
 	return 0; 
