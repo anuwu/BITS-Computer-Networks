@@ -31,12 +31,6 @@ int main(int argc , char *argv[])
 	ackPkt->pktType = ACK ;
 	serverSock = setSockAddrBind (&serverAddr, SERVER_PORT) ;
 
-	/*
-	flags = fcntl(serverSock, F_GETFL);
-	flags |= O_NONBLOCK;
-	fcntl(serverSock, F_SETFL, flags);
-	*/
-
 	fd_set serverfd ;
 	FD_ZERO (&serverfd) ;
 	FD_SET (serverSock, &serverfd) ;
@@ -49,7 +43,7 @@ int main(int argc , char *argv[])
 		{
 			while (recvfrom(serverSock , datPkt, sizeof(data), 0, (struct sockaddr *) &otherAddr, &slen) != -1)
 			{
-				if (1/*getRand() > DROP*/)
+				if (getRand() > DROP)
 				{
 					printf ("%d : RCVD\n", datPkt->offset) ;
 					ackPkt->offset = datPkt->offset ;

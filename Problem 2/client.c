@@ -19,7 +19,7 @@ void sendInWindow (int *windowPktStat, int *windowPktOffset, data **datCache, in
     int i , bytesRead ;
     data *datPkt ;
 
-    for (i = 0 ; i < WINDOW_SIZE ; i++)
+    for (i = 0 ; i < WINDOW_SIZE  && i + windowStart < noPkts ; i++)
     {
         if (!windowPktStat[i])
         {
@@ -46,10 +46,10 @@ void sendInWindow (int *windowPktStat, int *windowPktOffset, data **datCache, in
 
 }
 
-int unsentInWindow (int *windowPktStat)
+int unsentInWindow (int *windowPktStat, int windowStart, int noPkts)
 {
     int i ;
-    for (i = 0 ; i < WINDOW_SIZE ; i++)
+    for (i = 0 ; i < WINDOW_SIZE && i + windowStart < noPkts ; i++)
         if (!windowPktStat[i])
             return 1 ;
 
@@ -97,11 +97,11 @@ void shiftWindow (int *windowPktStat, int *windowPktOffset, data **datCache, int
     }
 }
 
-int windowAllAck (int *windowPktStat)
+int windowAllAck (int *windowPktStat, int windowStart, int noPkts)
 {
     int i ;
 
-    for (i = 0 ; i < WINDOW_SIZE ; i++)
+    for (i = 0 ; i < WINDOW_SIZE  && i + windowStart < noPkts ; i++)
         if (windowPktStat[i] != 2)
             return 0 ;
 
@@ -146,17 +146,20 @@ int main(void)
     int windowPktStat[WINDOW_SIZE] ;
     initWindow (windowPktStat, windowPktOffset, datCache) ;
 
+    int detectTmout = 1 ;
+
 	
     while (1)
     {
-        if (unsentInWindow(windowPktStat))
+        if (unsentInWindow(windowPktStat, windowStart, noPkts))
             sendInWindow (windowPktStat, windowPktOffset, datCache, windowStart, &latestPkt, noPkts, relayEvenSock, relayOddSock, &relayEvenAddr, &relayOddAddr, fp) ;
 
-        //printf ("BLOCK SELECT\n") ;
-        select (maxfd + 1 , &relayfds, NULL, NULL, NULL) ;
+        detectTmout = 1 ;
+        printf ("BLOCK SELECT\n") ;
+        select (maxfd + 1 , &relayfds, NULL, NULL, &timeout) ;
         if (FD_ISSET (relayEvenSock, &relayfds))
         {
-            // recvfrom(s, buf, BUFLEN, 0, (struct sockaddr *) &si_other, &slen)
+            detectTmout = 0 ;
             while (recvfrom (relayEvenSock, ackPkt, sizeof(data), 0, (struct sockaddr *) &relayEvenAddr, &slen) != -1)
             {
                 pktNo = ackPkt->offset/PACKET_SIZE ;
@@ -179,6 +182,7 @@ int main(void)
 
         if (FD_ISSET (relayOddSock, &relayfds))
         {
+            detectTmout = 0 ;
             while (recvfrom (relayOddSock, ackPkt, sizeof(data), 0, (struct sockaddr *) &relayOddAddr, &slen) != -1)
             {
                 pktNo = ackPkt->offset/PACKET_SIZE ;
@@ -199,9 +203,18 @@ int main(void)
             }
         }
 
-        if (windowStart == noPkts - windowSize && windowAllAck(windowPktStat))
+        if (detectTmout)
+        {
+            printf ("TIMEOUT\n") ;
+            sendTmoutInWindow ()
+            break ;
+        }
+
+        if (windowStart == noPkts - windowSize && windowAllAck(windowPktStat, windowStart, noPkts))
             break ;
 
+        timeout.tv_sec = TIMEOUT ;
+        timeout.tv_usec = 0 ;
         FD_ZERO (&relayfds) ;
         FD_SET (relayEvenSock, &relayfds) ;
         FD_SET (relayOddSock, &relayfds) ;
