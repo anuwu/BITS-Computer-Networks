@@ -204,7 +204,8 @@ int main(int argc , char **argv)
 			break ;
 	} 
 		
+	printf ("Finished download for DROP = %f\n", DROP) ;
 	fclose (fp) ;
 	close (master_socket) ;
-	return 0; 
+	exit (0) ;
 }

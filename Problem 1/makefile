@@ -22,9 +22,9 @@ profile.o : profile.c
 	gcc -c profile.c
 
 objClean :
-	rm *.o
+	rm -f *.o
 
 clean :
-	rm client
-	rm server
-	rm profile
+	rm -f client
+	rm -f server
+	rm -f profile

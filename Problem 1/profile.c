@@ -12,15 +12,17 @@ int main ()
 	struct timeval start, end ;
 	double time ;
 
+	pid_t pidServer, pidClient ;
+
 	int status ;
 	char dropStr[10] ;
-	double drop = 0.95 ;
+	double drop = 0 ;
 
 	while (drop < 1)
 	{
 		gettimeofday (&start, NULL) ;
 
-	    if (!fork())
+	    if (!(pidServer = fork()))
 	    {
 	    	memset (dropStr, 0, 10) ;
 	    	sprintf (dropStr , "%f", drop) ;
@@ -28,13 +30,15 @@ int main ()
 	    	execvp(argsServer[0],argsServer); 
 	    }
 
-	    if (!fork())
+	    if (!(pidClient = fork()))
 	    {
 	    	char *argsClient[]={"./client" , "FALSE" , NULL}; 
 	    	execvp(argsClient[0],argsClient); 
 	    }
 
-	    wait (&status) ;
+	    waitpid (pidClient, &status, 0) ;
+	    waitpid (pidServer, &status, 0) ;
+
 	    gettimeofday (&end, NULL) ;
 
 	    time = 1000*(end.tv_sec - start.tv_sec) ;
@@ -42,7 +46,7 @@ int main ()
 
 	    printf ("Time taken = %fms\n", time) ;
 
-	    drop += 0.05 ;
+	    drop += 1 ;
 	}
       
     return 0; 
