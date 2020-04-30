@@ -111,6 +111,10 @@ int main(int argc , char **argv)
 	addrlen = sizeof(address); 
 	int disconnect = 0 ;
 
+	double time ;
+	struct timeval start, end ;
+	gettimeofday (&start, NULL) ;
+
 	FILE *fp = fopen ("output.txt", "w") ;
 	printf ("Starting download for DROP = %f\n", DROP) ;
 	while(TRUE) 
@@ -203,8 +207,14 @@ int main(int argc , char **argv)
 		if (disconnect == 2)
 			break ;
 	} 
-		
+
+	gettimeofday (&end, NULL) ;
+
+    time = 1000*(end.tv_sec - start.tv_sec) ;
+    time += (end.tv_usec - start.tv_usec)/1000 ;
+    printf ("Time taken = %fms\n", time) ;
 	printf ("Finished download for DROP = %f\n", DROP) ;
+	
 	fclose (fp) ;
 	close (master_socket) ;
 	exit (0) ;

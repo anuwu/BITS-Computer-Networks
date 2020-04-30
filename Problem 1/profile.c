@@ -9,9 +9,6 @@
 
 int main () 
 { 
-	struct timeval start, end ;
-	double time ;
-
 	pid_t pidServer, pidClient ;
 
 	int status ;
@@ -20,8 +17,6 @@ int main ()
 
 	while (drop < 1)
 	{
-		gettimeofday (&start, NULL) ;
-
 	    if (!(pidServer = fork()))
 	    {
 	    	memset (dropStr, 0, 10) ;
@@ -38,13 +33,6 @@ int main ()
 
 	    waitpid (pidClient, &status, 0) ;
 	    waitpid (pidServer, &status, 0) ;
-
-	    gettimeofday (&end, NULL) ;
-
-	    time = 1000*(end.tv_sec - start.tv_sec) ;
-	    time += (end.tv_usec - start.tv_usec)/1000 ;
-
-	    printf ("Time taken = %fms\n", time) ;
 
 	    drop += 1 ;
 	}
