@@ -57,9 +57,9 @@ int main(int argc, char **argv)
 	}
 
 	int printFlag ;
-	if (!strcmp(argv[1], "TRUE"))
+	if (!strcmp(argv[1], "1"))
 		printFlag = 1 ;
-	else if (!strcmp(argv[1], "FALSE"))
+	else if (!strcmp(argv[1], "0"))
 		printFlag = 0 ;
 	else
 	{

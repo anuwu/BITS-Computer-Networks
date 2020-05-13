@@ -40,9 +40,9 @@ int main(int argc , char **argv)
 
 	int printFlag ;
 
-	if (!strcmp(argv[2], "TRUE"))
+	if (!strcmp(argv[2], "1"))
 		printFlag = 1 ;
-	else if (!strcmp(argv[2], "FALSE"))
+	else if (!strcmp(argv[2], "0"))
 		printFlag = 0 ;
 	else
 	{
@@ -116,7 +116,6 @@ int main(int argc , char **argv)
 	gettimeofday (&start, NULL) ;
 
 	FILE *fp = fopen ("output.txt", "w") ;
-	printf ("Starting download for DROP = %f\n", DROP) ;
 	while(TRUE) 
 	{ 
 		//clear the socket set 
@@ -212,8 +211,7 @@ int main(int argc , char **argv)
 
     time = 1000*(end.tv_sec - start.tv_sec) ;
     time += (end.tv_usec - start.tv_usec)/1000 ;
-    printf ("Time taken = %fms\n", time) ;
-	printf ("Finished download for DROP = %f\n", DROP) ;
+    printf ("DROP = %f, Time taken = %fms\n", DROP, time) ;
 	
 	fclose (fp) ;
 	close (master_socket) ;

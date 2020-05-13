@@ -21,13 +21,13 @@ int main ()
 	    {
 	    	memset (dropStr, 0, 10) ;
 	    	sprintf (dropStr , "%f", drop) ;
-	    	char *argsServer[]={"./server", dropStr , "FALSE" , NULL}; 
+	    	char *argsServer[]={"./server", dropStr , "0" , NULL}; 
 	    	execvp(argsServer[0],argsServer); 
 	    }
 
 	    if (!(pidClient = fork()))
 	    {
-	    	char *argsClient[]={"./client" , "FALSE" , NULL}; 
+	    	char *argsClient[]={"./client" , "0" , NULL}; 
 	    	execvp(argsClient[0],argsClient); 
 	    }
 
