@@ -27,7 +27,7 @@ int main(int argc , char **argv)
 { 
 	if (argc != 3)
 	{
-		printf ("Invalid number of arguments\n") ;
+		printf ("Invalid number of arguments. ./server 0.45 1 for drop probability 0.45 and printing enabled\n") ;
 		exit (0) ;
 	}
 

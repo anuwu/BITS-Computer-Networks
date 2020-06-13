@@ -52,7 +52,7 @@ int main(int argc, char **argv)
 {
 	if (argc != 2)
 	{
-		printf ("Invalid number of arguments!\n") ;
+		printf ("Invalid number of arguments! ./client 1 for printing enabled\n") ;
 		exit (0) ;
 	}
 
