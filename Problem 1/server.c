@@ -215,7 +215,7 @@ int main(int argc , char **argv)
     FILE *profile ;
     profile = fopen ("prof.txt", "a") ;
     printf ("DROP = %f, Time taken = %fms\n", DROP, time) ;
-    fprintf (profile, "%f %f\n", DROP, time) ;
+    fprintf (profile, "%.2f %f\n", DROP, time) ;
     fclose (profile) ;
 	
 	fclose (fp) ;

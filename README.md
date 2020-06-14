@@ -21,6 +21,6 @@ Run the `./profile.sh` script to profile the data transfer time with respect to 
 
 ## Note
 
-The profile script is not perfect. Its output is indeterminate, probably due to server/relay/client tasks finishing in an unknown order. However, each probability is probed 10 times, which will give an output once. The profiled data will be present in `prof.txt` and one can use `gnuplot` to plot it.
+For each probability, the file transfer is repeated multiple number of times to obtain a statistical average in steps of 0.05 probability starting from 0.05 upto 0.99. To obtain a decent profile, run `./profile.sh`. Otherwise, to obtain a finer profile in steps of 0.01, run `./profile_fine.sh`
 
 
