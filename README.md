@@ -1,4 +1,4 @@
-#Computer Networks Assignment
+# Networking Assignment
 
 There are two problems in this assignment. In the first problem, one client opens 2 parallel TCP connections to a server and sends data to it. In the second problem, one client sends even and odd packets to two relays, which inturn sends the data to the server. Packets can be dropped with a probability of [0, 1) and this number can be set at runtime.
 
