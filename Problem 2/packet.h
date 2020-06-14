@@ -1,11 +1,12 @@
 #define PACKET_SIZE 100
 #define WINDOW_SIZE 10
-#define DROP 0.1
 #define TIMEOUT 2
 
 #define SERVER_PORT 8888
 #define RELAY_EVEN_PORT 9000
 #define RELAY_ODD_PORT 9001
+
+#define myprint(x, ...) if (printFlag) printf(x, ##__VA_ARGS__ )
 
 typedef struct _dat data ;
 

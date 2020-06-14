@@ -18,6 +18,8 @@
 #define TRUE 1 
 #define FALSE 0 
 
+int printFlag ;
+
 double getDelay ()
 {
 	return 2 * (double)rand()/(double)(RAND_MAX) ;
@@ -30,6 +32,31 @@ double getRand ()
 
 int main(int argc , char *argv[]) 
 { 
+	if (argc != 3)
+	{
+		printf ("Invalid number of arguments. ./relay 0.45 1 for drop probability 0.45 and printing enabled\n") ;
+		exit (0) ;
+	}
+
+	double DROP = atof (argv[1]) ;
+	if (DROP < 0.0 || DROP >= 1.0)
+	{
+		printf ("Please specify drop probability between 0 and 1\n") ;
+		exit (0) ;
+	}
+
+	if (!strcmp(argv[2], "1"))
+		printFlag = 1 ;
+	else if (!strcmp(argv[2], "0"))
+		printFlag = 0 ;
+	else
+	{
+		printf ("Print flag is incorrect. Specify as true or else\n") ;
+		exit (0) ;
+	}
+
+ 
+	/* ------------------------------------------------------------------------------------------------- */
 	struct sockaddr_in serverAddr ;
 	int serverSock ;
 	serverSock = setSockAddr (&serverAddr, SERVER_PORT) ;
@@ -53,7 +80,7 @@ int main(int argc , char *argv[])
 		FD_ZERO (&evenfd) ;
 		FD_SET (relayEvenSock, &evenfd) ;
 
-		printf("RELAY_EVEN : Waiting for connection\n"); 
+		myprint("RELAY_EVEN : Waiting for connection\n"); 
 		sleep (0.0001) ;
 		while (TRUE)
 		{
@@ -109,8 +136,8 @@ int main(int argc , char *argv[])
 
 		wait (NULL) ;
 		printLine () ;
-		printf ("\nEven relay closed\n") ;
-		printf ("Odd relay closed\n") ;
+		myprint ("\nEven relay closed\n") ;
+		myprint ("Odd relay closed\n") ;
 		close (relayEvenSock) ;
 	}
 	else
@@ -123,7 +150,7 @@ int main(int argc , char *argv[])
 		FD_SET (relayOddSock, &oddfd) ;
 		FD_SET (serverSock, &oddfd) ;
 		
-		printf("RELAY_ODD : Waiting for connection\n") ; 
+		myprint("RELAY_ODD : Waiting for connection\n") ; 
 		printLine () ;
 		printHeading () ;
 		

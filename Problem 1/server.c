@@ -16,14 +16,42 @@
 #define TRUE 1 
 #define FALSE 0 
 #define PORT 8888
+
 	
 double getRand ()
 {
 	return rand() / (double)(RAND_MAX) ;
 }
 
-int main(int argc , char *argv[]) 
+int main(int argc , char **argv) 
 { 
+	if (argc != 3)
+	{
+		printf ("Invalid number of arguments. ./server 0.45 1 for drop probability 0.45 and printing enabled\n") ;
+		exit (0) ;
+	}
+
+	double DROP = atof (argv[1]) ;
+	if (DROP < 0.0 || DROP >= 1.0)
+	{
+		printf ("Please specify drop probability between 0 and 1\n") ;
+		exit (0) ;
+	}
+
+	int printFlag ;
+
+	if (!strcmp(argv[2], "1"))
+		printFlag = 1 ;
+	else if (!strcmp(argv[2], "0"))
+		printFlag = 0 ;
+	else
+	{
+		printf ("Print flag is incorrect. Specify as true or else\n") ;
+		exit (0) ;
+	}
+
+	/* ---------------------------------------------------------------------------*/
+
 	int opt = TRUE; 
 	int master_socket , addrlen , new_socket , client_socket[3] , 
 		max_clients = 3 , activity, i , valread , sd; 
@@ -34,7 +62,6 @@ int main(int argc , char *argv[])
 	data *ackPkt = (data *) malloc (sizeof(data)) ;
 	ackPkt->pktType = ACK ;
 		
-	//char buffer[1025]; //data buffer of 1K 
 	srand (time(0)) ;
 		
 	//set of socket descriptors 
@@ -71,7 +98,7 @@ int main(int argc , char *argv[])
 		perror("bind failed"); 
 		exit(EXIT_FAILURE); 
 	} 
-	printf("Waiting for connection\n"); 
+	myprint("Waiting for connection\n"); 
 		
 	//try to specify maximum of 3 pending connections for the master socket 
 	if (listen(master_socket, 2) < 0) 
@@ -84,8 +111,11 @@ int main(int argc , char *argv[])
 	addrlen = sizeof(address); 
 	int disconnect = 0 ;
 
+	double time ;
+	struct timeval start, end ;
+	gettimeofday (&start, NULL) ;
+
 	FILE *fp = fopen ("output.txt", "w") ;
-		
 	while(TRUE) 
 	{ 
 		//clear the socket set 
@@ -129,7 +159,7 @@ int main(int argc , char *argv[])
 
 			if (downloadPrompt)
 			{
-				printf ("Downloading...\n") ;
+				myprint ("Downloading...\n") ;
 				downloadPrompt = 0 ;
 			}
 
@@ -160,14 +190,14 @@ int main(int argc , char *argv[])
 					{ 
 						if (getRand () > DROP)
 						{
-							printf ("RCVD PKT : Seq No %d of size %d bytes from channel %d\n", datBuf->offset, datBuf->payload, datBuf->channel) ;
+							myprint ("RCVD PKT : Seq No %d of size %d bytes from channel %d\n", datBuf->offset, datBuf->payload, datBuf->channel) ;
 							fseek (fp, datBuf->offset, SEEK_SET) ;
 							fwrite (datBuf->stuff, sizeof(char), datBuf->payload, fp) ;
 
 							ackPkt->offset = datBuf->offset ;
 							ackPkt->channel = datBuf->channel ;
 							send(sd , ackPkt , sizeof(data) , 0); 
-							printf ("SENT ACK : for PKT with Seq No %d from channel %d\n", ackPkt->offset, ackPkt->channel) ;
+							myprint ("SENT ACK : for PKT with Seq No %d from channel %d\n", ackPkt->offset, ackPkt->channel) ;
 						}
 					} 
 				} 
@@ -176,9 +206,19 @@ int main(int argc , char *argv[])
 		if (disconnect == 2)
 			break ;
 	} 
-		
-	printf ("File received at server side\n") ;
+
+	gettimeofday (&end, NULL) ;
+
+    time = 1000*(end.tv_sec - start.tv_sec) ;
+    time += (end.tv_usec - start.tv_usec)/1000 ;
+
+    FILE *profile ;
+    profile = fopen ("prof.txt", "a") ;
+    printf ("DROP = %f, Time taken = %fms\n", DROP, time) ;
+    fprintf (profile, "%f %f\n", DROP, time) ;
+    fclose (profile) ;
+	
 	fclose (fp) ;
 	close (master_socket) ;
-	return 0; 
+	exit (0) ;
 }

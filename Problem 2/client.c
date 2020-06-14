@@ -1,5 +1,5 @@
 #include<stdlib.h> //exit(0);
-#include<stdio.h> //printf
+#include<stdio.h> //myprint
 #include<string.h> //memset
 #include<unistd.h>
 #include <fcntl.h>
@@ -8,13 +8,13 @@
 #include <sys/wait.h>
 #include "packet.h"
 
+int printFlag ;
+
 void die(char *s)
 {
     perror(s);
     exit(1);
 }
-
-
 
 void sendPktInWindow (int *windowPktStat, int *windowPktOffset, data **datCache, int windowStart, int noPkts, int relayEvenSock, int relayOddSock, struct sockaddr_in* relayEvenAddr, struct sockaddr_in* relayOddAddr, FILE *fp)
 {
@@ -125,8 +125,26 @@ int windowAllAck (int *windowPktStat, int windowStart, int noPkts)
     return 1 ;
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
+    if (argc != 2)
+    {
+        printf ("Invalid number of arguments! ./client 1 for printing enabled\n") ;
+        exit (0) ;
+    }
+
+    if (!strcmp(argv[1], "1"))
+        printFlag = 1 ;
+    else if (!strcmp(argv[1], "0"))
+        printFlag = 0 ;
+    else
+    {
+        printf ("Print flag is incorrect. Specify as true or else\n") ;
+        exit (0) ;
+    }
+
+    /* ----------------------------------------------------------------------------------------- */
+
 	struct sockaddr_in relayEvenAddr, relayOddAddr, otherAddr ;
     int relayEvenSock, relayOddSock, i, slen = sizeof(struct sockaddr_in) ;
     int sndCount, fileSize, noPkts, bytesRead ;
@@ -144,8 +162,8 @@ int main(void)
 	fileSize = ftell (fp)  ;
 	noPkts = fileSize/PACKET_SIZE + ((fileSize % PACKET_SIZE)?1:0) ;
 	fseek (fp, 0, SEEK_SET) ;
-	printf ("Size of file = %d\n", fileSize) ;
-	printf ("No of packets = %d\n", noPkts) ;
+	myprint ("Size of file = %d\n", fileSize) ;
+	myprint ("No of packets = %d\n", noPkts) ;
 
     /* ------------------------------------------------------ */
 
@@ -218,7 +236,7 @@ int main(void)
     }
 
     printLine () ;
-    printf ("\nFile successfully uploaded!\n") ;
+    myprint ("\nFile successfully uploaded!\n") ;
 
     closePkt->pktType = CLOSE ;
     sendto (relayEvenSock, closePkt, sizeof(data), 0, (struct sockaddr *) &relayEvenAddr, slen) ;

@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include "packet.h"
 
+#define myprint(x, ...) if (printFlag) printf(x, ##__VA_ARGS__ )
+
 char* isLastToString (isLast i)
 {
 	switch (i)

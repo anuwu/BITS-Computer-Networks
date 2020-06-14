@@ -1,6 +1,7 @@
 #define PACKET_SIZE 100
-#define DROP 0.2
 #define TIMEOUT 2
+
+#define myprint(x, ...) if (printFlag) printf(x, ##__VA_ARGS__ )
 
 typedef struct _dat data ;
 

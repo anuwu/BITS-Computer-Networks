@@ -1,5 +1,5 @@
 #include<stdlib.h> //exit(0);
-#include<stdio.h> //printf
+#include<stdio.h> //myprint
 #include<string.h> //memset
 #include<unistd.h>
 #include<arpa/inet.h>
@@ -48,8 +48,28 @@ int resendPrep (fd_set *readfds, int sockfd, struct timeval *timeout, int *sndCo
 	timeout->tv_usec = 0 ;
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
+	if (argc != 2)
+	{
+		printf ("Invalid number of arguments! ./client 1 for printing enabled\n") ;
+		exit (0) ;
+	}
+
+	int printFlag ;
+	if (!strcmp(argv[1], "1"))
+		printFlag = 1 ;
+	else if (!strcmp(argv[1], "0"))
+		printFlag = 0 ;
+	else
+	{
+		printf ("Print flag is incorrect. Specify as true or else\n") ;
+		exit (0) ;
+	}
+
+	/* ------------------------------------------------------------------------------------------------- */
+
+
 	struct sockaddr_in server_addr;
     int sockfd, i, slen = sizeof(server_addr), sndCount, fileSize, noPkts, bytesRead ;
     struct timeval timeout = {TIMEOUT,0} ;
@@ -67,8 +87,8 @@ int main(void)
 	noPkts = fileSize/PACKET_SIZE + ((fileSize % PACKET_SIZE)?1:0) ;
 	fseek (fp, 0, SEEK_SET) ;
 
-	printf ("Size of file = %d\n", fileSize) ;
-	printf ("No of packets = %d\n", noPkts) ;
+	myprint ("Size of file = %d\n", fileSize) ;
+	myprint ("No of packets = %d\n", noPkts) ;
 
 	if (fork())
 	{
@@ -88,26 +108,19 @@ int main(void)
 	    	datBuf->payload = bytesRead ;
 	    	datCache[i] = datBuf ;
 
-	    	//printf ("%d : %s\n", i, datBuf->stuff) ;
-	    	//printf ("%s\n", datBuf->stuff) ;
-
 	    	sndCount = 1 ;
 	        while (1)
 	        {
-	        	//printf ("%d : SENDING %d\n", i, sndCount) ;
 	        	send (sockfd, (char *)datBuf, sizeof(data), 0) ;
-	        	printf ("SENT PKT : Seq No %d of size %d bytes from channel %d\n", datBuf->offset, datBuf->payload, datBuf->channel) ;
+	        	myprint ("SENT PKT : Seq No %d of size %d bytes from channel %d\n", datBuf->offset, datBuf->payload, datBuf->channel) ;
 	        	select (sockfd + 1, &readfds, NULL, NULL, &timeout) ;
 
 	        	if (FD_ISSET (sockfd, &readfds))
 	        	{
 	        		read (sockfd, (char *)ackPkt, sizeof(data)) ;
-	        		//printf ("%d : ACK\n", i) ;
-	        		printf ("RCVD ACK : for PKT with Seq No %d from channel %d\n", ackPkt->offset, ackPkt->channel) ;
+	        		myprint ("RCVD ACK : for PKT with Seq No %d from channel %d\n", ackPkt->offset, ackPkt->channel) ;
 	        		break ;	
 	        	}
-	        	else
-	        		;//printf ("%d : REAL_TIMEOUT\n", i) ;
 
 	        	resendPrep (&readfds, sockfd, &timeout, &sndCount) ;
 
@@ -115,7 +128,6 @@ int main(void)
 	    }
 
 	    wait (NULL) ;
-	    printf ("Uploading done!\n") ;
 	    fclose (fp) ;
 	    close(sockfd);
 	}
@@ -137,27 +149,20 @@ int main(void)
 	    	datBuf->payload = bytesRead ;
 	    	datCache[i] = datBuf ;
 
-	    	//printf ("%d : %s\n", i, datBuf->stuff) ;
-	    	//printf ("%s\n", datBuf->stuff) ;
-
 	    	
 	    	sndCount = 1 ;
 	        while (1)
 	        {
-	        	//printf ("\t%d : SENDING %d\n", i, sndCount) ;
 	        	send (sockfd, (char *)datBuf, sizeof(data), 0) ;
-	        	printf ("SENT PKT : Seq No %d of size %d bytes from channel %d\n", datBuf->offset, datBuf->payload, datBuf->channel) ;
+	        	myprint ("SENT PKT : Seq No %d of size %d bytes from channel %d\n", datBuf->offset, datBuf->payload, datBuf->channel) ;
 	        	select (sockfd + 1 , &readfds, NULL, NULL, &timeout) ;
 
 	        	if (FD_ISSET (sockfd, &readfds))
 	        	{
 	        		read (sockfd, (char *)ackPkt, sizeof(data)) ;
-	        		//printf ("\t%d : ACK\n", i) ;
-	        		printf ("RCVD ACK : for PKT with Seq No %d from channel %d\n", ackPkt->offset, ackPkt->channel) ;
+	        		myprint ("RCVD ACK : for PKT with Seq No %d from channel %d\n", ackPkt->offset, ackPkt->channel) ;
 	        		break ;	
 	        	}
-	        	else
-	        		;//printf ("\t%d : REAL_TIMEOUT\n", i) ;
 
 				resendPrep (&readfds, sockfd, &timeout, &sndCount) ;
 	        }
@@ -165,5 +170,5 @@ int main(void)
 	    close(sockfd);
 	}
 	
-	return 0 ;
+	exit (0) ;
 }
