@@ -211,7 +211,12 @@ int main(int argc , char **argv)
 
     time = 1000*(end.tv_sec - start.tv_sec) ;
     time += (end.tv_usec - start.tv_usec)/1000 ;
+
+    FILE *profile ;
+    profile = fopen ("prof.txt", "a") ;
     printf ("DROP = %f, Time taken = %fms\n", DROP, time) ;
+    fprintf (profile, "%f %f\n", DROP, time) ;
+    fclose (profile) ;
 	
 	fclose (fp) ;
 	close (master_socket) ;

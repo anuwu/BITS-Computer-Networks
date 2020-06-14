@@ -1,5 +1,5 @@
 #include <stdlib.h> //exit(0);
-#include <stdio.h> //printf
+#include <stdio.h> //myprint
 #include <string.h> //memset
 #include <unistd.h>
 #include <math.h>
@@ -9,6 +9,8 @@
 #include <sys/time.h>
 #include <time.h>
 #include "packet.h"
+
+extern int printFlag ;
 
 char* isLastToString (isLast i)
 {
@@ -44,7 +46,7 @@ int setSockAddr (struct sockaddr_in *server_addr, int relay_port)
 
 	if ((sockfd=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
 	{
-		printf ("Socket creation error\n") ;
+		myprint ("Socket creation error\n") ;
         exit (0) ;
 	}
  
@@ -94,26 +96,26 @@ void printTime ()
     tm_info = localtime(&tv.tv_sec);
 
     strftime(buffer, 15, "%H:%M:%S", tm_info);
-    sprintf(buffer, "%s.%03d", buffer, millisec) ;
+    myprint(buffer, "%s.%03d", buffer, millisec) ;
 
-    printf ("%20s", buffer) ;
+    myprint ("%20s", buffer) ;
 }
 
 void printLog (char *nodeName, char *eventType, data *pkt, char *src, char *dest)
 {
-    printf ("%10s%15s", nodeName, eventType) ;
+    myprint ("%10s%15s", nodeName, eventType) ;
     printTime () ;
-    printf ("%20s%10d%15s%15s", packetTypeToString (pkt->pktType), pkt->offset, src, dest) ;
-    printf ("\n") ;
+    myprint ("%20s%10d%15s%15s", packetTypeToString (pkt->pktType), pkt->offset, src, dest) ;
+    myprint ("\n") ;
 }
 
 void printHeading ()
 {
-	printf ("\n%10s%15s%20s%20s%10s%15s%15s\n\n", "NODE NAME", "EVENT TYPE", "TIMESTAMP", "PACKET TYPE", "SEQ NO", "SOURCE",  "DESTINATION") ;
+	myprint ("\n%10s%15s%20s%20s%10s%15s%15s\n\n", "NODE NAME", "EVENT TYPE", "TIMESTAMP", "PACKET TYPE", "SEQ NO", "SOURCE",  "DESTINATION") ;
 }
 	
 void printLine ()
 {
-	printf ("\n-----------------------------------------------------------------------------------------------------------------\n") ;
-	printf ("-----------------------------------------------------------------------------------------------------------------\n") ;
+	myprint ("\n-----------------------------------------------------------------------------------------------------------------\n") ;
+	myprint ("-----------------------------------------------------------------------------------------------------------------\n") ;
 }

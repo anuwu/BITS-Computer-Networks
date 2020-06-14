@@ -67,6 +67,8 @@ int main(int argc, char **argv)
 		exit (0) ;
 	}
 
+	/* ------------------------------------------------------------------------------------------------- */
+
 
 	struct sockaddr_in server_addr;
     int sockfd, i, slen = sizeof(server_addr), sndCount, fileSize, noPkts, bytesRead ;
