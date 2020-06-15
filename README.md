@@ -39,4 +39,4 @@ The following plot will be obtained (in 3-4 hours)
 ## Note
 
 	- Parameters of the problem are described in `packet.h` in the respective folder
-	- For each probability, the file transfer is repeated multiple number of times to obtain a statistical average in steps of 0.05 probability starting from 0.05 upto 0.99. To obtain a decent profile, run `./profile.sh`. Otherwise, to obtain a finer profile in steps of 0.01, run `./profile_fine.sh`
+	- If socket binding fails, execute `netstat -nptul` to kill any process that's occupying port 8888
