@@ -1,6 +1,6 @@
 # Networking Assignment
 
-There are two problems in this assignment. In both problems, packets can be dropped with a probability of [0, 1) and this number can be set at runtime.
+There are two problems in this assignment. In both problems, packets can be dropped with a probability of [0, 1) and this number can be set at runtime. Problem description can be found in [this](Problem-Statement.pdf) file.
 
 ## Problem 1
 
